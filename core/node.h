@@ -13,7 +13,7 @@ class Node
 public:
 	using properties_t = std::map<Hash, std::shared_ptr<const Property>>;
 
-    Node(Metadata* metadata = nullptr);
+    Node(Metadata* metadata);
 	~Node();
 
 	Node(const Node& rhs);

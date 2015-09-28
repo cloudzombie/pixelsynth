@@ -52,7 +52,7 @@ public:
 
 		void connect(ConnectionPtr connection);
 
-		void fixConnections();
+		void fixupConnections();
 
 	private:
 		Builder() = default;

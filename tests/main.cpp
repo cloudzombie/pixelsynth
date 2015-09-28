@@ -1,6 +1,7 @@
 #include "static.h"
 #include <core/project.h>
 #include <core/metadata.h>
+#include <core/factory.h>
 
 using namespace bandit;
 using namespace Core;
@@ -35,10 +36,9 @@ struct TestNode
 	}
 };
 
-template <typename T>
-std::shared_ptr<Node> makeNode(std::string title)
+std::shared_ptr<Node> makeNode(Hash type, std::string title)
 {
-	auto builder = std::make_shared<Node::Builder>(T::metadata());
+	auto builder = Factory::makeNode(type);
 	builder->mutateProperty(hash("Title"))->set(0, title);
 	return std::make_shared<Node>(std::move(*builder));
 }
@@ -58,12 +58,12 @@ go_bandit([]() {
 			AssertThat(p->current().childCount(), Equals(0));
 			{
 				auto mut = p->mutate();
-				mut->append(nullptr, { makeNode<TestNode>("a") });
+				mut->append(nullptr, { makeNode(hash("TestNode"), "a") });
 			}
 			AssertThat(p->current().childCount(), Equals(1));
 			{
 				auto mut = p->mutate();
-				mut->append(nullptr, { makeNode<TestNode>("b") });
+				mut->append(nullptr, { makeNode(hash("TestNode"), "b") });
 			}
 			AssertThat(p->current().childCount(), Equals(2));
 			AssertThat(findNode(*p, "a") == nullptr, Equals(false));
@@ -83,14 +83,14 @@ go_bandit([]() {
 			AssertThat(p->current().childCount(), Equals(0));
 			{
 				auto mut = p->mutate();
-				mut->append(nullptr, { makeNode<TestNode>("a") });
-				mut->append(nullptr, { makeNode<TestNode>("b") });
-				mut->append(nullptr, { makeNode<TestNode>("c") });
+				mut->append(nullptr, { makeNode(hash("TestNode"), "a") });
+				mut->append(nullptr, { makeNode(hash("TestNode"), "b") });
+				mut->append(nullptr, { makeNode(hash("TestNode"), "c") });
 			}
 			AssertThat(p->current().childCount(), Equals(3));
 			{
 				auto mut = p->mutate();
-				mut->append(nullptr, { makeNode<TestNode>("g1") });
+				mut->append(nullptr, { makeNode(hash("TestNode"), "g1") });
 			}
 			auto g1 = findNode(*p, "g1");
 			auto b = findNode(*p, "b");
@@ -125,7 +125,7 @@ go_bandit([]() {
 		{
 			p = std::make_unique<Project>();
 			auto mut = p->mutate();
-			mut->append(nullptr, { makeNode<TestNode>("a") });
+			mut->append(nullptr, { makeNode(hash("TestNode"), "a") });
 		});
 
 		it("can delete a node", [&]()
@@ -170,8 +170,8 @@ go_bandit([]() {
 			p = std::make_unique<Project>();
 			{
 				auto mut = p->mutate();
-				mut->append(nullptr, { makeNode<TestNode>("a") });
-				mut->append(nullptr, { makeNode<TestNode>("b") });
+				mut->append(nullptr, { makeNode(hash("TestNode"), "a") });
+				mut->append(nullptr, { makeNode(hash("TestNode"), "b") });
 			}
 			{
 				auto mut = p->mutate();
@@ -225,6 +225,8 @@ go_bandit([]() {
 
 int main(int argc, char* argv[])
 {
+	DefineNode(TestNode);
+
 	// Run the tests.
 	return bandit::run(argc, argv);
 }

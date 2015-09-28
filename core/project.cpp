@@ -5,7 +5,7 @@ using Core::NodePtr;
 using Core::Document;
 
 Project::Project()
-	: root_(std::make_shared<Node>())
+	: root_(std::make_shared<Node>(nullptr))
 {
 	history_.push_back(Document::buildRootDocument(root_));
 }
@@ -34,7 +34,7 @@ std::shared_ptr<Document::Builder> Project::mutate() noexcept
 {
 	std::shared_ptr<Document::Builder> ptr(new Document::Builder(current()), [this](Document::Builder* b)
 	{
-		b->fixConnections();
+		b->fixupConnections();
 		history_.push_back(std::move(*b));
 		delete b;
 	});

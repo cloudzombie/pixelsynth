@@ -132,7 +132,7 @@ std::shared_ptr<Node::Builder> Builder::mutate(NodePtr node) noexcept
 	return ptr;
 }
 
-void Builder::fixConnections()
+void Builder::fixupConnections()
 {
 	connections_t fixed;
 
