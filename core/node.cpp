@@ -1,24 +1,31 @@
 #include "node.h"
 #include "metadata.h"
 
-using Node = Core::Node;
-using Hash = Core::Hash;
-using Property = Core::Property;
-using Metadata = Core::Metadata;
+using Core::Node;
+using Core::Hash;
+using Core::Property;
+using Core::Metadata;
+using Core::ConnectorMetadataCollection;
 using Builder = Node::Builder;
 
 struct Node::Impl
 {
 	properties_t properties_;
+	ConnectorMetadataCollection* connectorMetadata_;
 };
 
 Node::Node(Metadata* metadata)
 	: impl_(std::make_unique<Impl>())
 {
-	for (auto&& meta: metadata->propertyMetadataCollection)
+	if (metadata)
 	{
-		auto p = std::make_shared<Property>(&meta);
-		impl_->properties_[meta.hash()] = p;
+		for (auto&& meta : metadata->propertyMetadataCollection)
+		{
+			auto p = std::make_shared<Property>(&meta);
+			impl_->properties_[meta.hash()] = p;
+		}
+
+		impl_->connectorMetadata_ = &metadata->connectorMetadataCollection;
 	}
 }
 
@@ -42,9 +49,16 @@ const Node::properties_t& Node::properties() const
 	return impl_->properties_;
 }
 
-const Property& Node::prop(const Hash hash) const
+const Property* Node::prop(const Hash hash) const
 {
-	return *impl_->properties_.find(hash)->second;
+	auto it = impl_->properties_.find(hash);
+	if (it == end(impl_->properties_)) return nullptr;
+	return it->second.get();
+}
+
+const ConnectorMetadataCollection& Node::connectorMetadata() const
+{
+	return *impl_->connectorMetadata_;
 }
 
 /////////////////////////////////////////////////////////

@@ -1,11 +1,11 @@
 #include "property.h"
 #include "metadata.h"
 
-using Property = Core::Property;
-using PropertyMetadata = Core::PropertyMetadata;
+using Core::Property;
+using Core::PropertyMetadata;
+using Core::Frame;
+using Core::PropertyValue;
 using Builder = Property::Builder;
-using Frame = Core::Frame;
-using PropertyValue = Core::PropertyValue;
 
 struct Property::Impl
 {

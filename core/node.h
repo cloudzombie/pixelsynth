@@ -13,7 +13,7 @@ class Node
 public:
 	using properties_t = std::map<Hash, std::shared_ptr<const Property>>;
 
-    Node(Metadata* metadata);
+    Node(Metadata* metadata = nullptr);
 	~Node();
 
 	Node(const Node& rhs);
@@ -23,7 +23,9 @@ public:
 	Node& operator=(Node&& rhs);
 
 	const properties_t& properties() const;
-	const Property& prop(const Hash hash) const;
+	const Property* prop(const Hash hash) const;
+
+	const ConnectorMetadataCollection& connectorMetadata() const;
 
 	class Builder
 	{
