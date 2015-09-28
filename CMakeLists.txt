@@ -1,7 +1,18 @@
-cmake_minimum_required(VERSION 3.3)
-project(newnodes)
+project(Pixelsynth)
+cmake_minimum_required(VERSION 3.2)
+set(CMAKE_CXX_STANDARD 14)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-set(SOURCE_FILES main.cpp tree.h node.h node.cpp)
-add_executable(newnodes ${SOURCE_FILES})
+include(cmake/cotire/cmake/cotire.cmake)
+
+include_directories(${CMAKE_SOURCE_DIR})
+include_directories(${CMAKE_SOURCE_DIR}/libs/bandit)
+include_directories(${CMAKE_SOURCE_DIR}/libs/tree)
+include_directories(${CMAKE_SOURCE_DIR}/libs/variant/include)
+
+add_subdirectory(core)
+add_subdirectory(tests)

@@ -1,0 +1,9 @@
+[submodule "libs/bandit"]
+	path = libs/bandit
+	url = https://github.com/joakimkarlsson/bandit.git
+[submodule "cmake/cotire"]
+	path = cmake/cotire
+	url = https://github.com/sakra/cotire.git
+[submodule "libs/variant"]
+	path = libs/variant
+	url = https://github.com/eggs-cpp/variant.git
