@@ -77,6 +77,7 @@ public:
 
 private:
 	friend class cereal::access;
+
 	template<class Archive>
 	void save(Archive& archive) const
 	{
@@ -86,12 +87,9 @@ private:
 		archive(*it++);
 
 		std::map<NodePtr, std::vector<NodePtr>> nodes;
-		std::for_each(it, end(impl_->nodes_), [&](auto& node)
-		{
-			nodes[parent(node)].emplace_back(node);
-		});
+		std::for_each(it, end(impl_->nodes_), [&](auto& node) { nodes[parent(node)].emplace_back(node); });
 		archive(nodes);
-		//archive(d.connections());
+		archive(impl_->connections_);
 	}
 
 	template<class Archive>
@@ -113,6 +111,11 @@ private:
 				impl_->nodes_.append_child(parentPos, child);
 			}
 		}
+
+		std::vector<MutableConnectionPtr> connections;
+		archive(connections);
+		for (auto&& con : connections) impl_->connections_.emplace_back(con);
+
 	}
 
 	static tree_t::iterator iteratorFor(const tree_t& tree, NodePtr node) noexcept;

@@ -153,7 +153,7 @@ go_bandit([]() {
 				auto node_a = findNode(*p, "a");
 				mut.mutate(node_a, [&](Node::Builder& node)
 				{
-					node.addConnector(ConnectorMetadata::Builder("Test", ConnectorType::Output).build());
+					node.addConnector(ConnectorMetadata::Builder("Test", ConnectorType::Output));
 				});
 			});
 			AssertThat(connector(findNode(*p, "a"), "Test") == nullptr, Equals(false));
@@ -187,8 +187,9 @@ go_bandit([]() {
 		it("can connect nodes", [&]()
 		{
 			auto node_a = findNode(*p, "a");
+			auto node_b = findNode(*p, "b");
 			AssertThat(p->current().connections().size(), Equals(1));
-			AssertThat(outputNode(p->current().connections()[0]) == node_a, Equals(true));
+			AssertThat(p->current().connections()[0]->outputNode() == node_a, Equals(true));
 
 			p->mutate([&](Document::Builder& mut)
 			{
@@ -199,9 +200,11 @@ go_bandit([]() {
 			});
 			auto node_a2 = findNode(*p, "a2");
 
-			AssertThat(outputNode(p->current().connections()[0]) == node_a2, Equals(true));
+			AssertThat(p->current().connections()[0]->outputNode() == node_a2, Equals(true));
+			AssertThat(p->current().connections()[0]->inputNode() == node_b, Equals(true));
 			p->undo();
-			AssertThat(outputNode(p->current().connections()[0]) == node_a, Equals(true));
+			AssertThat(p->current().connections()[0]->outputNode() == node_a, Equals(true));
+			AssertThat(p->current().connections()[0]->inputNode() == node_b, Equals(true));
 			p->undo();
 			AssertThat(p->current().connections().size(), Equals(0));
 		});
@@ -220,7 +223,7 @@ go_bandit([]() {
 				p->undo();
 				AssertThat(p->current().connections().size(), Equals(1));
 				auto node_a = findNode(*p, "a");
-				AssertThat(outputNode(p->current().connections()[0]) == node_a, Equals(true));
+				AssertThat(p->current().connections()[0]->outputNode() == node_a, Equals(true));
 			});
 		});
 	});
@@ -239,6 +242,18 @@ go_bandit([]() {
 				mut.append(nullptr, { makeNode(hash("TestNode"), "b") });
 				mut.append(nullptr, { makeNode(hash("TestNode"), "c") });
 			});
+			p->mutate([&](Document::Builder& mut)
+			{
+				auto node_a = findNode(*p, "a");
+				auto node_b = findNode(*p, "b");
+				auto node_c = findNode(*p, "c");
+				mut.connect(std::make_shared<Connection>(make_tuple(node_a, connector(node_a, "Out"), node_b, connector(node_b, "In"))));
+
+				mut.mutate(node_c, [&](Node::Builder& node)
+				{
+					node.addConnector(ConnectorMetadata::Builder("Test", ConnectorType::Output));
+				});
+			});
 		});
 
 		it("should serialize and deserialize", [&]()
@@ -254,10 +269,21 @@ go_bandit([]() {
 				cereal::XMLInputArchive archive(s);
 				archive(*p2);
 			}
+			auto node_a = findNode(*p2, "a");
+			auto node_b = findNode(*p2, "b");
+			auto node_c = findNode(*p2, "c");
 
-			AssertThat(findNode(*p2, "a") == nullptr, Equals(false));
-			AssertThat(findNode(*p2, "b") == nullptr, Equals(false));
-			AssertThat(findNode(*p2, "c") == nullptr, Equals(false));
+			AssertThat(node_a == nullptr, Equals(false));
+			AssertThat(node_b == nullptr, Equals(false));
+			AssertThat(node_c == nullptr, Equals(false));
+			AssertThat(p2->current().connections().size(), Equals(1));
+
+			AssertThat(p2->current().connections()[0]->outputNode() == node_a, Equals(true));
+			AssertThat(p2->current().connections()[0]->inputNode() == node_b, Equals(true));
+			AssertThat(p2->current().connections()[0]->output() == connector(node_a, "Out"), Equals(true));
+			AssertThat(p2->current().connections()[0]->input() == connector(node_b, "In"), Equals(true));
+
+			AssertThat(connector(node_c, "Test") == nullptr, Equals(false));
 		});
 	});
 });

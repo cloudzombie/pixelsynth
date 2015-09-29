@@ -29,6 +29,7 @@ namespace Core
 
 	class ConnectorMetadata;
 	using ConnectorMetadataPtr = std::shared_ptr<const ConnectorMetadata>;
+	using MutableConnectorMetadataPtr = std::shared_ptr<ConnectorMetadata>;
 	using ConnectorMetadataCollection = std::vector<ConnectorMetadataPtr>;
 
 	class PropertyMetadata;
@@ -41,6 +42,11 @@ namespace Core
 
 	class Connection;
 	using ConnectionPtr = std::shared_ptr<const Connection>;
+	using MutableConnectionPtr = std::shared_ptr<Connection>;
+
+	class Property;
+	using PropertyPtr = std::shared_ptr<const Property>;
+	using MutablePropertyPtr = std::shared_ptr<Property>;
 
 	class Project;
 	class Document;

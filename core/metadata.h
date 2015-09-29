@@ -53,6 +53,7 @@ class ConnectorMetadata
 		Hash hash_;
 		std::string title_;
 		ConnectorType type_;
+		bool isLocal_ { false };
 
 		friend class ConnectorMetadata;
 		friend class Builder;
@@ -66,11 +67,13 @@ public:
 	Hash hash() const noexcept { return data_.hash_; }
 	std::string title() const noexcept { return data_.title_; }
 	ConnectorType type() const noexcept { return data_.type_; }
+	bool isLocal() const noexcept { return data_.isLocal_; }
 
 	class Builder
 	{
 	public:
 		Builder(const char* title, ConnectorType type) { data_.hash_ = Core::hash(title); data_.title_ = title; data_.type_ = type; }
+		Builder& withLocal(bool local) { data_.isLocal_ = local; return *this; }
 		ConnectorMetadataPtr build() noexcept { return std::make_shared<ConnectorMetadata>(std::move(*this)); }
 
 	private:
@@ -83,7 +86,20 @@ public:
 	{}
 
 private:
-	const Data data_;
+	friend class cereal::access;
+
+	template<class Archive>
+	void serialize(Archive& archive)
+	{
+		archive(data_.hash_);
+		archive(data_.isLocal_);
+		if (!data_.isLocal_) return;
+		archive(data_.title_);
+		archive(data_.type_);
+	}
+
+	ConnectorMetadata() = default;
+	Data data_;
 };
 
 struct Metadata

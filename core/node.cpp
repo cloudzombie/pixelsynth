@@ -7,6 +7,7 @@ using Core::Factory;
 using Core::Hash;
 using Core::Property;
 using Core::Metadata;
+using Core::ConnectorMetadata;
 using Core::ConnectorMetadataCollection;
 using Core::ConnectorMetadataPtr;
 using Builder = Node::Builder;
@@ -17,6 +18,11 @@ Node::Node()
 
 Node::Node(Hash nodeType)
 	: impl_(std::make_unique<Impl>())
+{
+	setNodeType(nodeType);
+}
+
+void Node::setNodeType(Hash nodeType)
 {
 	impl_->nodeType_ = nodeType;
 
@@ -116,7 +122,7 @@ void Builder::mutateProperty(const Hash hash, mutate_fn fn) noexcept
 	it->second = std::make_shared<Property>(std::move(b));
 }
 
-void Builder::addConnector(ConnectorMetadataPtr connector) noexcept
+void Builder::addConnector(ConnectorMetadata::Builder&& connector) noexcept
 {
-	impl_->localConnectorMetadata_.emplace_back(connector);
+	impl_->localConnectorMetadata_.emplace_back(connector.withLocal(true).build());
 }

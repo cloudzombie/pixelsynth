@@ -23,11 +23,6 @@ inline std::shared_ptr<const Core::Node> findNode(Core::Project& project, std::s
 	return *result;
 }
 
-inline std::shared_ptr<const Core::Node> outputNode(std::shared_ptr<const Core::Connection> connection)
-{
-	return std::get<0>(connection->connection());
-}
-
 inline Core::ConnectorMetadataPtr connector(std::shared_ptr<const Core::Node> node, std::string connectorTitle)
 {
 	auto result = find_if(begin(node->connectorMetadata()), end(node->connectorMetadata()), [connectorTitle](auto& metadata)

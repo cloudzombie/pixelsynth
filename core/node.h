@@ -1,10 +1,9 @@
 #pragma once
 #include "static.h"
 #include "property.h"
+#include "metadata.h"
 
 BEGIN_NAMESPACE(Core)
-
-struct Metadata;
 
 class Node
 {
@@ -19,6 +18,7 @@ private:
 		ConnectorMetadataCollection* sharedConnectorMetadata_;
 		ConnectorMetadataCollection localConnectorMetadata_;
 
+		// cache
 		ConnectorMetadataCollection combinedConnectorMetadata_;
 		size_t combinedHash_;
 	};
@@ -55,7 +55,7 @@ public:
 
 		void mutateProperty(const Hash hash, mutate_fn fn) noexcept;
 
-		void addConnector(ConnectorMetadataPtr connector) noexcept;
+		void addConnector(ConnectorMetadata::Builder&& connector) noexcept;
 
 	private:
 		friend class Node;
@@ -72,18 +72,29 @@ private:
 	{
 		archive(impl_->nodeType_);
 		archive(impl_->properties_);
+		archive(impl_->localConnectorMetadata_);
 	}
 
 	template<class Archive>
 	void load(Archive& archive)
 	{
-		archive(impl_->nodeType_);
-		std::map<Hash, std::shared_ptr<Property>> props;
+		Hash nodeType;
+		archive(nodeType);
+		setNodeType(nodeType);
+
+		std::map<Hash, MutablePropertyPtr> props;
 		archive(props);
 		for (auto&& kvp : props) impl_->properties_[kvp.first] = kvp.second;
+	
+		std::vector<MutableConnectorMetadataPtr> localConnectors;
+		archive(localConnectors);
+		for (auto& c : localConnectors) impl_->localConnectorMetadata_.emplace_back(c);
 	}
 
 	Node();
+
+	void setNodeType(Hash nodeType);
+
 	std::unique_ptr<Impl> impl_;
 };
 
