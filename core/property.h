@@ -27,12 +27,20 @@ class PropertyMetadata;
 
 class Property
 {
-	struct Impl;
-
 public:
 	using keys_t = std::map<Frame, PropertyValue>;
-	
-	Property(PropertyMetadata* metadata);
+
+private:
+	struct Impl
+	{
+		Hash nodeType_;
+		Hash propertyType_;
+		PropertyMetadata* metadata_;
+		keys_t keys_;
+	};
+
+public:
+	Property(Hash nodeType, Hash propertyType);
 	~Property();
 
 	Property(const Property& rhs);
@@ -70,11 +78,48 @@ public:
 		return *getPropertyValue(frame).target<T>();
 	}
 
-	const PropertyMetadata& metadata() const;
+	const PropertyMetadata& metadata() const noexcept;
 
 private:
-	PropertyValue getPropertyValue(Frame frame) const;
+	friend class cereal::access;
+	template<class Archive>
+	void save(Archive& archive) const
+	{
+		archive(impl_->nodeType_);
+		archive(impl_->propertyType_);
 
+		archive(impl_->keys_.size());
+		for (auto&& kvp : impl_->keys_)
+		{
+			archive(kvp.first);
+			archive(kvp.second);
+		}
+	}
+
+	template<class Archive>
+	void load(Archive& archive)
+	{
+		archive(impl_->nodeType_);
+		archive(impl_->propertyType_);
+		setMetadata(impl_->nodeType_, impl_->propertyType_);
+
+		size_t size;
+		archive(size);
+		for (size_t t = 0; t < size;t++)
+		{
+			Frame frame;
+			PropertyValue value = defaultValue();
+			archive(frame);
+			archive(value);
+			impl_->keys_[frame] = value;
+		}
+	}
+
+	PropertyValue getPropertyValue(Frame frame) const noexcept;
+	void setMetadata(Hash nodeType, Hash propertyType) noexcept;
+	PropertyValue defaultValue() noexcept;
+
+	Property();
 	std::unique_ptr<Impl> impl_;
 };
 

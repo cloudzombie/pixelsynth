@@ -10,12 +10,6 @@ using Core::Hash;
 using Core::ConnectorMetadata;
 using Builder = Document::Builder;
 
-struct Document::Impl
-{
-	tree_t nodes_;
-	connections_t connections_;
-};
-
 Document::Document()
 	: impl_(std::make_unique<Impl>())
 {
@@ -49,7 +43,9 @@ const Document::connections_t& Document::connections() const noexcept
 NodePtr Document::parent(NodePtr node) const noexcept
 {
 	auto it = iteratorFor(this->nodes(), node);
-	return *tree_t::parent(it);
+	auto parent = tree_t::parent(it);
+	if (parent.node == nullptr) return nullptr;
+	return *parent;
 }
 
 size_t Document::childCount(NodePtr node) const noexcept

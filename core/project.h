@@ -18,7 +18,27 @@ public:
 	const Document& current() const noexcept;
 	void mutate(mutate_fn fn) noexcept;
 
-private:
+private:	
+	friend class cereal::access;
+	template<class Archive>
+	void save(Archive& archive) const
+	{
+		archive(root_);
+		archive(current());
+	}
+
+	template<class Archive>
+	void load(Archive& archive)
+	{
+		MutableNodePtr root;
+		archive(root);
+		root_ = root;
+
+		Document d;
+		archive(d);
+		history_ = { d };
+	}
+
 	history_t history_;
 	redohistory_t redoStack_;
 	NodePtr root_;

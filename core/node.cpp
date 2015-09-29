@@ -1,27 +1,30 @@
 #include "node.h"
 #include "metadata.h"
+#include "factory.h"
 
 using Core::Node;
+using Core::Factory;
 using Core::Hash;
 using Core::Property;
 using Core::Metadata;
 using Core::ConnectorMetadataCollection;
 using Builder = Node::Builder;
 
-struct Node::Impl
-{
-	properties_t properties_;
-	ConnectorMetadataCollection* connectorMetadata_;
-};
+Node::Node()
+	: impl_(std::make_unique<Impl>())
+{}
 
-Node::Node(Metadata* metadata)
+Node::Node(Hash nodeType)
 	: impl_(std::make_unique<Impl>())
 {
+	impl_->nodeType_ = nodeType;
+
+	auto metadata = Factory::metadata(nodeType);
 	if (metadata)
 	{
 		for (auto&& meta : metadata->propertyMetadataCollection)
 		{
-			auto p = std::make_shared<Property>(&meta);
+			auto p = std::make_shared<Property>(nodeType, meta.hash());
 			impl_->properties_[meta.hash()] = p;
 		}
 

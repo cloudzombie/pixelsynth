@@ -9,8 +9,9 @@ class Factory
 public:
 	using node_metadata_t = std::map<Hash, Metadata*>;
 
-	static void registerNodeMetadataProvider(Hash hash, Metadata* metadata) noexcept;
-	static std::shared_ptr<Node::Builder> makeNode(Hash hash) noexcept;
+	static void registerNodeMetadataProvider(Hash nodeType, Metadata* metadata) noexcept;
+	static std::shared_ptr<Node::Builder> makeNode(Hash nodeType) noexcept;
+	static Metadata* metadata(Hash nodeType) noexcept;
 
 private:
 	static node_metadata_t nodes_;

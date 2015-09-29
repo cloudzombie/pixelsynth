@@ -8,12 +8,19 @@ struct Metadata;
 
 class Node
 {
-	struct Impl;
-
 public:
 	using properties_t = std::map<Hash, std::shared_ptr<const Property>>;
 
-    Node(Metadata* metadata);
+private:
+	struct Impl
+	{
+		Hash nodeType_;
+		properties_t properties_;
+		ConnectorMetadataCollection* connectorMetadata_;
+	};
+
+public:
+    Node(Hash nodeType);
 	~Node();
 
 	Node(const Node& rhs);
@@ -53,7 +60,25 @@ public:
 	Node& operator=(Builder&& rhs);
 
 private:
-    std::unique_ptr<Impl> impl_;
+	friend class cereal::access;
+	template<class Archive>
+	void save(Archive& archive) const
+	{
+		archive(impl_->nodeType_);
+		archive(impl_->properties_);
+	}
+
+	template<class Archive>
+	void load(Archive& archive)
+	{
+		archive(impl_->nodeType_);
+		std::map<Hash, std::shared_ptr<Property>> props;
+		archive(props);
+		for (auto&& kvp : props) impl_->properties_[kvp.first] = kvp.second;
+	}
+
+	Node();
+	std::unique_ptr<Impl> impl_;
 };
 
 END_NAMESPACE(Core)

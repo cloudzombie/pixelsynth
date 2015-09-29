@@ -9,6 +9,7 @@ class PropertyMetadata
 	{
 		Hash hash_;
 		std::string title_;
+		PropertyValue defaultValue_;
 
 		friend class PropertyMetadata;
 		friend class Builder;
@@ -21,11 +22,15 @@ public:
 
 	Hash hash() const noexcept { return data_.hash_; }
 	std::string title() const noexcept { return data_.title_; }
+	PropertyValue defaultValue() const noexcept { return data_.defaultValue_; }
 
 	class Builder
 	{
 	public:
-		Builder(const char* title) { data_.hash_ = Core::hash(title); data_.title_ = title; }
+		explicit Builder(const char* title) { data_.hash_ = Core::hash(title); data_.title_ = title; }
+
+		template <typename T>
+		Builder&& ofType() { data_.defaultValue_ = T(); return std::move(*this); }
 
 	private:
 		friend class PropertyMetadata;

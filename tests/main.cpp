@@ -2,6 +2,7 @@
 #include <core/project.h>
 #include <core/metadata.h>
 #include <core/factory.h>
+#include <core/serializer.h>
 
 using namespace bandit;
 using namespace Core;
@@ -12,7 +13,7 @@ struct TestNode
 	{
 		return
 		{
-			PropertyMetadata::Builder("Title")
+			PropertyMetadata::Builder("Title").ofType<std::string>()
 		};
 	}
 
@@ -204,6 +205,42 @@ go_bandit([]() {
 				auto node_a = findNode(*p, "a");
 				AssertThat(outputNode(p->current().connections()[0]) == node_a, Equals(true));
 			});
+		});
+	});
+
+	describe("serializer:", [&]()
+	{
+		std::unique_ptr<Project> p;
+		std::unique_ptr<Project> p2;
+
+		before_each([&]()
+		{
+			p = std::make_unique<Project>();
+			p->mutate([&](auto& mut)
+			{
+				mut.append(nullptr, { makeNode(hash("TestNode"), "a") });
+				mut.append(nullptr, { makeNode(hash("TestNode"), "b") });
+				mut.append(nullptr, { makeNode(hash("TestNode"), "c") });
+			});
+		});
+
+		it("should serialize and deserialize", [&]()
+		{
+			std::stringstream s;
+			{
+				cereal::XMLOutputArchive archive(s);
+				archive(*p);
+			}
+
+			p2 = std::make_unique<Project>();
+			{
+				cereal::XMLInputArchive archive(s);
+				archive(*p2);
+			}
+
+			AssertThat(findNode(*p2, "a") == nullptr, Equals(false));
+			AssertThat(findNode(*p2, "b") == nullptr, Equals(false));
+			AssertThat(findNode(*p2, "c") == nullptr, Equals(false));
 		});
 	});
 });

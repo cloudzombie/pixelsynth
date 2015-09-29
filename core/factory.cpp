@@ -7,13 +7,20 @@ using Core::Metadata;
 
 Factory::node_metadata_t Factory::nodes_;
 
-void Factory::registerNodeMetadataProvider(Hash hash, Metadata* metadata) noexcept
+void Factory::registerNodeMetadataProvider(Hash nodeType, Metadata* metadata) noexcept
 {
-	nodes_[hash] = metadata;
+	nodes_[nodeType] = metadata;
 }
 
-std::shared_ptr<Node::Builder> Factory::makeNode(Hash hash) noexcept
+std::shared_ptr<Node::Builder> Factory::makeNode(Hash nodeType) noexcept
 {
-	assert(nodes_.find(hash) != end(nodes_));
-	return std::make_shared<Node::Builder>(nodes_[hash]);
+	return std::make_shared<Node::Builder>(nodeType);
+}
+
+Metadata* Factory::metadata(Hash nodeType) noexcept
+{
+	if (!nodeType) return nullptr; // root
+
+	assert(nodes_.find(nodeType) != end(nodes_));
+	return nodes_[nodeType];
 }

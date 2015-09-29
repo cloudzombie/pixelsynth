@@ -15,6 +15,11 @@
 #define BEGIN_NAMESPACE(name) namespace name {
 #define END_NAMESPACE(name) }
 
+namespace cereal
+{
+	class access;
+}
+
 namespace Core
 {
 	using Frame = float;
@@ -27,7 +32,11 @@ namespace Core
 
 	class Node;
 	using NodePtr = std::shared_ptr<const Node>;
+	using MutableNodePtr = std::shared_ptr<Node>;
 
 	class Connection;
 	using ConnectionPtr = std::shared_ptr<const Connection>;
+
+	class Project;
+	class Document;
 };

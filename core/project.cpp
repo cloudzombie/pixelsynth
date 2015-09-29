@@ -5,7 +5,7 @@ using Core::NodePtr;
 using Core::Document;
 
 Project::Project()
-	: root_(std::make_shared<Node>(nullptr))
+	: root_(std::make_shared<Node>(Hash()))
 {
 	history_.push_back(Document::buildRootDocument(root_));
 }
