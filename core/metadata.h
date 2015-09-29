@@ -28,6 +28,7 @@ public:
 	{
 	public:
 		explicit Builder(const char* title) { data_.hash_ = Core::hash(title); data_.title_ = title; }
+		PropertyMetadataPtr build() noexcept { return std::make_shared<PropertyMetadata>(std::move(*this)); }
 
 		template <typename T>
 		Builder&& ofType() { data_.defaultValue_ = T(); return std::move(*this); }
@@ -44,8 +45,6 @@ public:
 private:
 	const Data data_;
 };
-
-using PropertyMetadataCollection = std::vector<PropertyMetadata>;
 
 class ConnectorMetadata
 {
@@ -72,6 +71,7 @@ public:
 	{
 	public:
 		Builder(const char* title, ConnectorType type) { data_.hash_ = Core::hash(title); data_.title_ = title; data_.type_ = type; }
+		ConnectorMetadataPtr build() noexcept { return std::make_shared<ConnectorMetadata>(std::move(*this)); }
 
 	private:
 		friend class ConnectorMetadata;
@@ -93,3 +93,26 @@ struct Metadata
 };
 
 END_NAMESPACE(Core)
+
+namespace std
+{
+	template<> struct hash<Core::ConnectorMetadata>
+	{
+		size_t operator()(const Core::ConnectorMetadata& s) const
+		{
+			auto h1(hash<string>()(s.title()));
+			auto h2(hash<Core::ConnectorType>()(s.type()));
+			return h1 ^ (h2 << 1);
+		}
+	};
+
+	template<> struct hash<Core::ConnectorMetadataCollection>
+	{
+		size_t operator()(const Core::ConnectorMetadataCollection& s) const
+		{
+			size_t h = 54059;
+			for (auto&& item : s) h ^= hash<Core::ConnectorMetadata>()(*item);
+			return h;
+		}
+	};
+}

@@ -16,7 +16,11 @@ private:
 	{
 		Hash nodeType_;
 		properties_t properties_;
-		ConnectorMetadataCollection* connectorMetadata_;
+		ConnectorMetadataCollection* sharedConnectorMetadata_;
+		ConnectorMetadataCollection localConnectorMetadata_;
+
+		ConnectorMetadataCollection combinedConnectorMetadata_;
+		size_t combinedHash_;
 	};
 
 public:
@@ -50,6 +54,8 @@ public:
 		Builder& operator=(Builder&& rhs);
 
 		void mutateProperty(const Hash hash, mutate_fn fn) noexcept;
+
+		void addConnector(ConnectorMetadataPtr connector) noexcept;
 
 	private:
 		friend class Node;

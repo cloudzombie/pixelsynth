@@ -52,7 +52,7 @@ void Property::setMetadata(Hash nodeType, Hash propertyType) noexcept
 	auto nodeMetadata = Factory::metadata(nodeType);
 	if (nodeMetadata)
 	{
-		impl_->metadata_ = &*find_if(begin(nodeMetadata->propertyMetadataCollection), end(nodeMetadata->propertyMetadataCollection), [&](auto& m) { return m.hash() == propertyType; });
+		impl_->metadata_ = *find_if(begin(nodeMetadata->propertyMetadataCollection), end(nodeMetadata->propertyMetadataCollection), [&](auto& m) { return m->hash() == propertyType; });
 	}
 }
 

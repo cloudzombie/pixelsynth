@@ -13,7 +13,7 @@ struct TestNode
 	{
 		return
 		{
-			PropertyMetadata::Builder("Title").ofType<std::string>()
+			PropertyMetadata::Builder("Title").ofType<std::string>().build()
 		};
 	}
 
@@ -21,8 +21,8 @@ struct TestNode
 	{
 		return
 		{
-			ConnectorMetadata::Builder("Out", ConnectorType::Output),
-			ConnectorMetadata::Builder("In", ConnectorType::Input)
+			ConnectorMetadata::Builder("Out", ConnectorType::Output).build(),
+			ConnectorMetadata::Builder("In", ConnectorType::Input).build()
 		};
 	}
 
@@ -144,6 +144,23 @@ go_bandit([]() {
 			p->undo();
 			AssertThat(findNode(*p, "a") == nullptr, Equals(false));
 			AssertThat(findNode(*p, "a2") == nullptr, Equals(true));
+		});
+
+		it("can add a connector", [&]()
+		{
+			p->mutate([&](Document::Builder& mut)
+			{
+				auto node_a = findNode(*p, "a");
+				mut.mutate(node_a, [&](Node::Builder& node)
+				{
+					node.addConnector(ConnectorMetadata::Builder("Test", ConnectorType::Output).build());
+				});
+			});
+			AssertThat(connector(findNode(*p, "a"), "Test") == nullptr, Equals(false));
+			p->undo();
+			AssertThat(connector(findNode(*p, "a"), "Test") == nullptr, Equals(true));
+			p->redo();
+			AssertThat(connector(findNode(*p, "a"), "Test") == nullptr, Equals(false));
 		});
 	});
 

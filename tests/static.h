@@ -28,14 +28,14 @@ inline std::shared_ptr<const Core::Node> outputNode(std::shared_ptr<const Core::
 	return std::get<0>(connection->connection());
 }
 
-inline const Core::ConnectorMetadata* connector(std::shared_ptr<const Core::Node> node, std::string connectorTitle)
+inline Core::ConnectorMetadataPtr connector(std::shared_ptr<const Core::Node> node, std::string connectorTitle)
 {
 	auto result = find_if(begin(node->connectorMetadata()), end(node->connectorMetadata()), [connectorTitle](auto& metadata)
 	{
-		return metadata.hash() == Core::hash(connectorTitle.c_str());
+		return metadata->hash() == Core::hash(connectorTitle.c_str());
 	});
-	if (result == end(node->connectorMetadata())) throw new std::logic_error("Unknown connector");
-	return &(*result);
+	if (result == end(node->connectorMetadata())) return nullptr;
+	return *result;
 }
 
 inline std::ostream& operator<<(std::ostream &strm, Core::NodePtr &a) {

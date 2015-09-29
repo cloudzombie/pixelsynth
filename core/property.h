@@ -35,7 +35,7 @@ private:
 	{
 		Hash nodeType_;
 		Hash propertyType_;
-		PropertyMetadata* metadata_;
+		PropertyMetadataPtr metadata_;
 		keys_t keys_;
 	};
 

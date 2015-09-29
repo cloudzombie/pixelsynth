@@ -11,7 +11,7 @@ class Connection
 	struct Impl;
 
 public:
-	using connection_t = std::tuple<NodePtr, const ConnectorMetadata*, NodePtr, const ConnectorMetadata*>;
+	using connection_t = std::tuple<NodePtr, ConnectorMetadataPtr, NodePtr, ConnectorMetadataPtr>;
 
 	Connection(connection_t connection);
 	~Connection();

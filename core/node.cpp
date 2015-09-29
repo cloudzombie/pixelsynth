@@ -8,6 +8,7 @@ using Core::Hash;
 using Core::Property;
 using Core::Metadata;
 using Core::ConnectorMetadataCollection;
+using Core::ConnectorMetadataPtr;
 using Builder = Node::Builder;
 
 Node::Node()
@@ -24,11 +25,11 @@ Node::Node(Hash nodeType)
 	{
 		for (auto&& meta : metadata->propertyMetadataCollection)
 		{
-			auto p = std::make_shared<Property>(nodeType, meta.hash());
-			impl_->properties_[meta.hash()] = p;
+			auto p = std::make_shared<Property>(nodeType, meta->hash());
+			impl_->properties_[meta->hash()] = p;
 		}
 
-		impl_->connectorMetadata_ = &metadata->connectorMetadataCollection;
+		impl_->sharedConnectorMetadata_ = &metadata->connectorMetadataCollection;
 	}
 }
 
@@ -61,7 +62,14 @@ const Property* Node::prop(const Hash hash) const
 
 const ConnectorMetadataCollection& Node::connectorMetadata() const
 {
-	return *impl_->connectorMetadata_;
+	auto localHash = std::hash<ConnectorMetadataCollection>()(impl_->localConnectorMetadata_);
+	if (localHash != impl_->combinedHash_)
+	{
+		impl_->combinedConnectorMetadata_ = impl_->localConnectorMetadata_;
+		impl_->combinedConnectorMetadata_.insert(end(impl_->combinedConnectorMetadata_), begin(*impl_->sharedConnectorMetadata_), end(*impl_->sharedConnectorMetadata_));
+		impl_->combinedHash_ = localHash;
+	}
+	return impl_->combinedConnectorMetadata_;
 }
 
 /////////////////////////////////////////////////////////
@@ -106,4 +114,9 @@ void Builder::mutateProperty(const Hash hash, mutate_fn fn) noexcept
 	auto b = Property::Builder(*it->second);
 	fn(b);
 	it->second = std::make_shared<Property>(std::move(b));
+}
+
+void Builder::addConnector(ConnectorMetadataPtr connector) noexcept
+{
+	impl_->localConnectorMetadata_.emplace_back(connector);
 }

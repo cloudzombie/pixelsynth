@@ -28,7 +28,12 @@ namespace Core
 	enum class ConnectorType { Input, Output };
 
 	class ConnectorMetadata;
-	using ConnectorMetadataCollection = std::vector<ConnectorMetadata>;
+	using ConnectorMetadataPtr = std::shared_ptr<const ConnectorMetadata>;
+	using ConnectorMetadataCollection = std::vector<ConnectorMetadataPtr>;
+
+	class PropertyMetadata;
+	using PropertyMetadataPtr = std::shared_ptr<const PropertyMetadata>;
+	using PropertyMetadataCollection = std::vector<PropertyMetadataPtr>;
 
 	class Node;
 	using NodePtr = std::shared_ptr<const Node>;

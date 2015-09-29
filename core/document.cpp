@@ -133,9 +133,9 @@ void Builder::fixupConnections()
 	for (auto& conPtr: impl_->connections_)
 	{
 		NodePtr outputNode;
-		const ConnectorMetadata* output;
+		ConnectorMetadataPtr output;
 		NodePtr inputNode;
-		const ConnectorMetadata* input;
+		ConnectorMetadataPtr input;
 		tie(outputNode, output, inputNode, input) = conPtr->connection();
 
 		// Has the output or input node mutated?
