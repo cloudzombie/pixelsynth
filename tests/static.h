@@ -2,9 +2,11 @@
 
 #include <bandit/bandit.h>
 #include <tree/tree_util.h>
-#include <core/project.h>
-#include <core/node.h>
+
+#include <core/factory.h>
 #include <core/metadata.h>
+#include <core/node.h>
+#include <core/project.h>
 
 inline std::string title(std::shared_ptr<const Core::Node> node)
 {

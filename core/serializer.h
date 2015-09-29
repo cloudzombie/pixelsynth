@@ -33,4 +33,16 @@ namespace cereal
 		PropertyValueArchiver<Archive> fun(archive);
 		eggs::variants::apply(fun, p);
 	}
+
+	template <class Archive>
+	void serialize(Archive& ar, glm::vec2& vec2)
+	{
+		ar(vec2.x, vec2.y);
+	}
+
+	template <class Archive>
+	void serialize(Archive& ar, glm::vec3& vec3)
+	{
+		ar(vec3.x, vec3.y, vec3.z);
+	}
 }

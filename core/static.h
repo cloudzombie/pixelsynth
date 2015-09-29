@@ -9,6 +9,8 @@
 #include <stack>
 #include <eggs/variant.hpp>
 #include <tree/tree.h>
+#include <glm/vec2.hpp>
+#include <glm/vec3.hpp>
 
 #include "hash.h"
 
@@ -23,7 +25,7 @@ namespace cereal
 namespace Core
 {
 	using Frame = float;
-	using PropertyValue = eggs::variant<int, double, std::string>;
+	using PropertyValue = eggs::variant<int, double, glm::vec2, glm::vec3, std::string>;
 
 	enum class ConnectorType { Input, Output };
 
