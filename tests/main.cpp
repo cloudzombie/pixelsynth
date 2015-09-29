@@ -39,7 +39,7 @@ struct TestNode
 std::shared_ptr<Node> makeNode(Hash type, std::string title)
 {
 	auto builder = Factory::makeNode(type);
-	builder->mutateProperty(hash("Title"))->set(0, title);
+	builder->mutateProperty(hash("Title"), [&](auto& prop) { prop.set(0, title); });
 	return std::make_shared<Node>(std::move(*builder));
 }
 
@@ -56,15 +56,9 @@ go_bandit([]() {
 		it("allows adding nodes", [&]()
 		{
 			AssertThat(p->current().childCount(), Equals(0));
-			{
-				auto mut = p->mutate();
-				mut->append(nullptr, { makeNode(hash("TestNode"), "a") });
-			}
+			p->mutate([](auto& mut) { mut.append(nullptr, { makeNode(hash("TestNode"), "a") }); });
 			AssertThat(p->current().childCount(), Equals(1));
-			{
-				auto mut = p->mutate();
-				mut->append(nullptr, { makeNode(hash("TestNode"), "b") });
-			}
+			p->mutate([](auto& mut) { mut.append(nullptr, { makeNode(hash("TestNode"), "b") }); });
 			AssertThat(p->current().childCount(), Equals(2));
 			AssertThat(findNode(*p, "a") == nullptr, Equals(false));
 			AssertThat(findNode(*p, "b") == nullptr, Equals(false));
@@ -81,34 +75,28 @@ go_bandit([]() {
 		it("allows grouping nodes", [&]()
 		{
 			AssertThat(p->current().childCount(), Equals(0));
+			p->mutate([](auto& mut)
 			{
-				auto mut = p->mutate();
-				mut->append(nullptr, { makeNode(hash("TestNode"), "a") });
-				mut->append(nullptr, { makeNode(hash("TestNode"), "b") });
-				mut->append(nullptr, { makeNode(hash("TestNode"), "c") });
-			}
+				mut.append(nullptr, { makeNode(hash("TestNode"), "a") });
+				mut.append(nullptr, { makeNode(hash("TestNode"), "b") });
+				mut.append(nullptr, { makeNode(hash("TestNode"), "c") });
+			});
 			AssertThat(p->current().childCount(), Equals(3));
-			{
-				auto mut = p->mutate();
-				mut->append(nullptr, { makeNode(hash("TestNode"), "g1") });
-			}
+			p->mutate([](auto& mut) { mut.append(nullptr, { makeNode(hash("TestNode"), "g1") }); });
 			auto g1 = findNode(*p, "g1");
 			auto b = findNode(*p, "b");
 			auto c = findNode(*p, "c");
-			{
-				auto mut = p->mutate();
-				mut->reparent(g1, { b, c });
-			}
+			p->mutate([&](auto& mut) { mut.reparent(g1, { b, c }); });
 			AssertThat(p->current().parent(b), Equals(g1));
 			AssertThat(p->current().parent(c), Equals(g1));
 			AssertThat(p->current().childCount(g1), Equals(2));
 			AssertThat(p->current().childCount(), Equals(4));
+			p->mutate([&](auto& mut)
 			{
-				auto mut = p->mutate();
 				auto g1 = findNode(*p, "g1");
-				mut->eraseChildren({ g1 });
-				mut->erase({ g1 });
-			}
+				mut.eraseChildren({ g1 });
+				mut.erase({ g1 });
+			});
 			AssertThat(p->current().childCount(), Equals(1));
 
 			p->undo();
@@ -124,17 +112,13 @@ go_bandit([]() {
 		before_each([&]()
 		{
 			p = std::make_unique<Project>();
-			auto mut = p->mutate();
-			mut->append(nullptr, { makeNode(hash("TestNode"), "a") });
+			p->mutate([&](auto& mut) { mut.append(nullptr, { makeNode(hash("TestNode"), "a") }); });
 		});
 
 		it("can delete a node", [&]()
 		{
-			{
-				auto node = findNode(*p, "a");
-				auto pmut = p->mutate();
-				pmut->erase({ node });
-			}
+			auto node = findNode(*p, "a");
+			p->mutate([&](auto& mut) { mut.erase({ node }); });
 
 			AssertThat(findNode(*p, "a") == nullptr, Equals(true));
 			p->undo();
@@ -144,12 +128,13 @@ go_bandit([]() {
 		it("can change a property", [&]()
 		{
 			auto node_a = findNode(*p, "a");
+			p->mutate([&](Document::Builder& mut)
 			{
-				auto pmut = p->mutate();
-				auto nmut = pmut->mutate(node_a);
-				auto propmut = nmut->mutateProperty(hash("Title"));
-				propmut->set(0, "a2");
-			}
+				mut.mutate(node_a, [&](Node::Builder& node)
+				{
+					node.mutateProperty(hash("Title"), [&](Property::Builder& prop) { prop.set(0, "a2"); });
+				});
+			});
 			auto node_a2 = findNode(*p, "a2");
 			AssertThat(node_a->properties(), !Equals(node_a2->properties()));
 
@@ -168,17 +153,17 @@ go_bandit([]() {
 		before_each([&]()
 		{
 			p = std::make_unique<Project>();
+			p->mutate([&](auto& mut)
 			{
-				auto mut = p->mutate();
-				mut->append(nullptr, { makeNode(hash("TestNode"), "a") });
-				mut->append(nullptr, { makeNode(hash("TestNode"), "b") });
-			}
+				mut.append(nullptr, { makeNode(hash("TestNode"), "a") });
+				mut.append(nullptr, { makeNode(hash("TestNode"), "b") });
+			});
+			p->mutate([&](auto& mut)
 			{
-				auto mut = p->mutate();
 				auto node_a = findNode(*p, "a");
 				auto node_b = findNode(*p, "b");
-				mut->connect(std::make_shared<Connection>(make_tuple(node_a, connector(node_a, "Out"), node_b, connector(node_b, "In"))));
-			}
+				mut.connect(std::make_shared<Connection>(make_tuple(node_a, connector(node_a, "Out"), node_b, connector(node_b, "In"))));
+			});
 		});
 
 		it("can connect nodes", [&]()
@@ -187,12 +172,13 @@ go_bandit([]() {
 			AssertThat(p->current().connections().size(), Equals(1));
 			AssertThat(outputNode(p->current().connections()[0]) == node_a, Equals(true));
 
+			p->mutate([&](Document::Builder& mut)
 			{
-				auto pmut = p->mutate();
-				auto nmut = pmut->mutate(node_a);
-				auto propmut = nmut->mutateProperty(hash("Title"));
-				propmut->set(0, "a2");
-			}
+				mut.mutate(node_a, [&](Node::Builder& node)
+				{
+					node.mutateProperty(hash("Title"), [&](Property::Builder& prop) { prop.set(0, "a2"); });
+				});
+			});
 			auto node_a2 = findNode(*p, "a2");
 
 			AssertThat(outputNode(p->current().connections()[0]) == node_a2, Equals(true));
@@ -207,8 +193,7 @@ go_bandit([]() {
 			before_each([&]()
 			{
 				auto node_a = findNode(*p, "a");
-				auto pmut = p->mutate();
-				pmut->erase({ node_a });
+				p->mutate([&](auto& mut) { mut.erase({ node_a }); });
 			});
 
 			it("should disconnect and reconnect", [&]()

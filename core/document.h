@@ -34,6 +34,8 @@ public:
 		struct BuilderImpl;
 
 	public:
+		using mutate_fn = std::function<void(Node::Builder&)>;
+
 		explicit Builder(const Document& d);
 		~Builder();
 
@@ -43,7 +45,7 @@ public:
 		Builder(Builder&& rhs);
 		Builder& operator=(Builder&& rhs);
 
-		std::shared_ptr<Node::Builder> mutate(NodePtr node) noexcept;
+		void mutate(NodePtr node, mutate_fn fn) noexcept;
 
 		void append(NodePtr parent, std::initializer_list<NodePtr> nodes) noexcept;
 		void erase(std::initializer_list<NodePtr> nodes) noexcept;

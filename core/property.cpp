@@ -10,7 +10,7 @@ using Builder = Property::Builder;
 struct Property::Impl
 {
 	PropertyMetadata* metadata_;
-	std::map<Frame, PropertyValue> keys_;
+	keys_t keys_;
 };
 
 Property::Property(PropertyMetadata* metadata)

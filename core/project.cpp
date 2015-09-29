@@ -30,13 +30,10 @@ const Document& Project::current() const noexcept
 	return history_.back();
 }
 
-std::shared_ptr<Document::Builder> Project::mutate() noexcept
+void Project::mutate(mutate_fn fn) noexcept
 {
-	std::shared_ptr<Document::Builder> ptr(new Document::Builder(current()), [this](Document::Builder* b)
-	{
-		b->fixupConnections();
-		history_.push_back(std::move(*b));
-		delete b;
-	});
-	return ptr;
+	auto b = Document::Builder(current());
+	fn(b);
+	b.fixupConnections();
+	history_.push_back(std::move(b));
 }

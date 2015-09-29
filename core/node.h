@@ -30,6 +30,8 @@ public:
 	class Builder
 	{
 	public:
+		using mutate_fn = std::function<void(Property::Builder&)>;
+
 		Builder() = delete;
 		explicit Builder(const Node& d);
 		~Builder();
@@ -40,7 +42,7 @@ public:
 		Builder(Builder&& rhs);
 		Builder& operator=(Builder&& rhs);
 
-		std::shared_ptr<Property::Builder> mutateProperty(const Hash hash) noexcept;
+		void mutateProperty(const Hash hash, mutate_fn fn) noexcept;
 
 	private:
 		friend class Node;

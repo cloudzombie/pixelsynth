@@ -95,14 +95,12 @@ Node& Node::operator=(Builder&& rhs)
 	return *this;
 }
 
-std::shared_ptr<Property::Builder> Builder::mutateProperty(const Hash hash) noexcept
+void Builder::mutateProperty(const Hash hash, mutate_fn fn) noexcept
 {
 	auto it = impl_->properties_.find(hash);
 	assert(it != end(impl_->properties_));
-	std::shared_ptr<Property::Builder> ptr(new Property::Builder(*it->second), [this, it](Property::Builder* b)
-	{
-		it->second = std::make_shared<Property>(std::move(*b));
-		delete b;
-	});
-	return ptr;
+
+	auto b = Property::Builder(*it->second);
+	fn(b);
+	it->second = std::make_shared<Property>(std::move(b));
 }

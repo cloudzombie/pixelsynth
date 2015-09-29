@@ -30,6 +30,8 @@ class Property
 	struct Impl;
 
 public:
+	using keys_t = std::map<Frame, PropertyValue>;
+	
 	Property(PropertyMetadata* metadata);
 	~Property();
 

@@ -114,22 +114,19 @@ Document& Document::operator=(Builder&& rhs)
 	return *this;
 }
 
-std::shared_ptr<Node::Builder> Builder::mutate(NodePtr node) noexcept
+void Builder::mutate(NodePtr node, mutate_fn fn) noexcept
 {
-	std::shared_ptr<Node::Builder> ptr(new Node::Builder(*node), [this, node](Node::Builder* b)
-	{
-		// Construct the new node
-		auto&& newNode = std::make_shared<Node>(std::move(*b));
-		builderImpl_->mutatedNodes_[node] = newNode;
+	auto b = Node::Builder(*node);
+	fn(b);
 
-		// Replace it in the tree
-		auto pos = find(begin(impl_->nodes_), end(impl_->nodes_), node);
-		assert(pos != end(impl_->nodes_));
-		impl_->nodes_.replace(pos, newNode);
+	// Construct the new node
+	auto&& newNode = std::make_shared<Node>(std::move(b));
+	builderImpl_->mutatedNodes_[node] = newNode;
 
-		delete b;
-	});
-	return ptr;
+	// Replace it in the tree
+	auto pos = find(begin(impl_->nodes_), end(impl_->nodes_), node);
+	assert(pos != end(impl_->nodes_));
+	impl_->nodes_.replace(pos, newNode);
 }
 
 void Builder::fixupConnections()
