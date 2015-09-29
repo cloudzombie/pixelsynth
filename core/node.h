@@ -8,12 +8,12 @@ BEGIN_NAMESPACE(Core)
 class Node
 {
 public:
-	using properties_t = std::map<Hash, std::shared_ptr<const Property>>;
+	using properties_t = std::map<HashValue, std::shared_ptr<const Property>>;
 
 private:
 	struct Impl
 	{
-		Hash nodeType_;
+		HashValue nodeType_;
 		properties_t properties_;
 		ConnectorMetadataCollection* sharedConnectorMetadata_;
 		ConnectorMetadataCollection localConnectorMetadata_;
@@ -24,7 +24,7 @@ private:
 	};
 
 public:
-    Node(Hash nodeType);
+    Node(HashValue nodeType);
 	~Node();
 
 	Node(const Node& rhs);
@@ -34,7 +34,7 @@ public:
 	Node& operator=(Node&& rhs);
 
 	const properties_t& properties() const;
-	const Property* prop(const Hash hash) const;
+	const Property* prop(const HashValue hash) const;
 
 	const ConnectorMetadataCollection& connectorMetadata() const;
 
@@ -53,7 +53,7 @@ public:
 		Builder(Builder&& rhs);
 		Builder& operator=(Builder&& rhs);
 
-		void mutateProperty(const Hash hash, mutate_fn fn) noexcept;
+		void mutateProperty(const HashValue hash, mutate_fn fn) noexcept;
 
 		void addConnector(ConnectorMetadata::Builder&& connector) noexcept;
 
@@ -78,11 +78,11 @@ private:
 	template<class Archive>
 	void load(Archive& archive)
 	{
-		Hash nodeType;
+		HashValue nodeType;
 		archive(nodeType);
 		setNodeType(nodeType);
 
-		std::map<Hash, MutablePropertyPtr> props;
+		std::map<HashValue, MutablePropertyPtr> props;
 		archive(props);
 		for (auto&& kvp : props) impl_->properties_[kvp.first] = kvp.second;
 	
@@ -93,7 +93,7 @@ private:
 
 	Node();
 
-	void setNodeType(Hash nodeType);
+	void setNodeType(HashValue nodeType);
 
 	std::unique_ptr<Impl> impl_;
 };

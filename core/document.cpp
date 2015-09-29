@@ -6,7 +6,7 @@ using Core::Node;
 using Core::NodePtr;
 using Core::Connection;
 using Core::ConnectionPtr;
-using Core::Hash;
+using Core::HashValue;
 using Core::ConnectorMetadata;
 using Builder = Document::Builder;
 

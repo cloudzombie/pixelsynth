@@ -2,7 +2,7 @@
 #include "metadata.h"
 
 using Core::Connection;
-using Core::Hash;
+using Core::HashValue;
 using Core::Node;
 using Core::NodePtr;
 using Core::ConnectorMetadata;

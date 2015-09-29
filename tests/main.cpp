@@ -13,7 +13,10 @@ struct TestNode
 	{
 		return
 		{
-			PropertyMetadata::Builder("Title").ofType<std::string>().build()
+			PropertyMetadata::Builder("Title").ofType<std::string>().build(),
+			PropertyMetadata::Builder("int").ofType<int>().build(),
+			PropertyMetadata::Builder("double").ofType<double>().build(),
+			PropertyMetadata::Builder("string").ofType<std::string>().build()
 		};
 	}
 
@@ -37,11 +40,36 @@ struct TestNode
 	}
 };
 
-std::shared_ptr<Node> makeNode(Hash type, std::string title)
+std::shared_ptr<Node> makeNode(HashValue type, std::string title)
 {
 	auto builder = Factory::makeNode(type);
 	builder->mutateProperty(hash("Title"), [&](auto& prop) { prop.set(0, title); });
 	return std::make_shared<Node>(std::move(*builder));
+}
+
+static void addKeyframes(Document::Builder& mut, NodePtr n)
+{
+	mut.mutate(n, [&](Node::Builder& node)
+	{
+		node.mutateProperty(hash("int"), [&](Property::Builder& prop) { prop.set(0, -500); prop.set(100, 500); });
+		node.mutateProperty(hash("double"), [&](Property::Builder& prop) { prop.set(0, -500.0); prop.set(100, 500.0); });
+		node.mutateProperty(hash("string"), [&](Property::Builder& prop) { prop.set(0, "a"); prop.set(100, "b"); });
+	});
+}
+
+static void assertKeyframes(NodePtr n)
+{
+	AssertThat(n->prop(hash("int"))->get<int>(0), Equals(-500));
+	AssertThat(n->prop(hash("int"))->get<int>(50), Equals(0));
+	AssertThat(n->prop(hash("int"))->get<int>(100), Equals(500));
+
+	AssertThat(n->prop(hash("double"))->get<double>(0), Equals(-500));
+	AssertThat(n->prop(hash("double"))->get<double>(50), Equals(0));
+	AssertThat(n->prop(hash("double"))->get<double>(100), Equals(500));
+
+	AssertThat(n->prop(hash("string"))->get<std::string>(0), Equals("a"));
+	AssertThat(n->prop(hash("string"))->get<std::string>(50), Equals("a"));
+	AssertThat(n->prop(hash("string"))->get<std::string>(100), Equals("b"));
 }
 
 go_bandit([]() {
@@ -146,6 +174,15 @@ go_bandit([]() {
 			AssertThat(findNode(*p, "a2") == nullptr, Equals(true));
 		});
 
+		it("can animate a property", [&]()
+		{
+			p->mutate([&](Document::Builder& mut)
+			{
+				addKeyframes(mut, findNode(*p, "a"));
+			});
+			assertKeyframes(findNode(*p, "a"));
+		});
+
 		it("can add a connector", [&]()
 		{
 			p->mutate([&](Document::Builder& mut)
@@ -248,6 +285,7 @@ go_bandit([]() {
 				auto node_b = findNode(*p, "b");
 				auto node_c = findNode(*p, "c");
 				mut.connect(std::make_shared<Connection>(make_tuple(node_a, connector(node_a, "Out"), node_b, connector(node_b, "In"))));
+				addKeyframes(mut, node_a);
 
 				mut.mutate(node_c, [&](Node::Builder& node)
 				{
@@ -284,6 +322,8 @@ go_bandit([]() {
 			AssertThat(p2->current().connections()[0]->input() == connector(node_b, "In"), Equals(true));
 
 			AssertThat(connector(node_c, "Test") == nullptr, Equals(false));
+
+			assertKeyframes(node_a);
 		});
 	});
 });

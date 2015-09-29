@@ -2,26 +2,6 @@
 #include "static.h"
 
 BEGIN_NAMESPACE(Core)
-/*
-template <typename T>
-static T interpolate(const T& p, const T& n, const T& pp, const T& nn, float alpha)
-{
-	float alpha2 = alpha * alpha;
-	auto a0 = (pp * -0.5f) + (p * 1.5f) - (n * 1.5f) + (nn * 0.5f);
-	auto a1 = pp - p * 2.5f + n * 2.0f - nn * 0.5f;
-	auto a2 = pp * -0.5f + n * 0.5f;
-	auto a3 = p;
-
-	return static_cast<T>(a0 * alpha * alpha2 + a1 * alpha2 + a2 * alpha + a3);
-}
-
-template <>
-inline std::string interpolate<std::string>(const std::string& prev, const std::string& next, const std::string& prevprev, const std::string& nextnext, float alpha)
-{
-	return prev;
-}
-
-*/
 
 class PropertyMetadata;
 
@@ -33,14 +13,14 @@ public:
 private:
 	struct Impl
 	{
-		Hash nodeType_;
-		Hash propertyType_;
+		HashValue nodeType_;
+		HashValue propertyType_;
 		PropertyMetadataPtr metadata_;
 		keys_t keys_;
 	};
 
 public:
-	Property(Hash nodeType, Hash propertyType);
+	Property(HashValue nodeType, HashValue propertyType);
 	~Property();
 
 	Property(const Property& rhs);
@@ -116,7 +96,7 @@ private:
 	}
 
 	PropertyValue getPropertyValue(Frame frame) const noexcept;
-	void setMetadata(Hash nodeType, Hash propertyType) noexcept;
+	void setMetadata(HashValue nodeType, HashValue propertyType) noexcept;
 	PropertyValue defaultValue() noexcept;
 
 	Property();

@@ -4,7 +4,7 @@
 
 using Core::Node;
 using Core::Factory;
-using Core::Hash;
+using Core::HashValue;
 using Core::Property;
 using Core::Metadata;
 using Core::ConnectorMetadata;
@@ -16,13 +16,13 @@ Node::Node()
 	: impl_(std::make_unique<Impl>())
 {}
 
-Node::Node(Hash nodeType)
+Node::Node(HashValue nodeType)
 	: impl_(std::make_unique<Impl>())
 {
 	setNodeType(nodeType);
 }
 
-void Node::setNodeType(Hash nodeType)
+void Node::setNodeType(HashValue nodeType)
 {
 	impl_->nodeType_ = nodeType;
 
@@ -59,7 +59,7 @@ const Node::properties_t& Node::properties() const
 	return impl_->properties_;
 }
 
-const Property* Node::prop(const Hash hash) const
+const Property* Node::prop(const HashValue hash) const
 {
 	auto it = impl_->properties_.find(hash);
 	if (it == end(impl_->properties_)) return nullptr;
@@ -112,7 +112,7 @@ Node& Node::operator=(Builder&& rhs)
 	return *this;
 }
 
-void Builder::mutateProperty(const Hash hash, mutate_fn fn) noexcept
+void Builder::mutateProperty(const HashValue hash, mutate_fn fn) noexcept
 {
 	auto it = impl_->properties_.find(hash);
 	assert(it != end(impl_->properties_));

@@ -10,7 +10,7 @@
 
 namespace Core
 {
-	using Hash = unsigned long long;
+	using HashValue = unsigned long long;
 
 	// FNV-1a constants
 	static constexpr unsigned long long basis = 14695981039346656037ULL;

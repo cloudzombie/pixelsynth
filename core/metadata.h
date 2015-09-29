@@ -7,7 +7,7 @@ class PropertyMetadata
 {
 	class Data
 	{
-		Hash hash_;
+		HashValue hash_;
 		std::string title_;
 		PropertyValue defaultValue_;
 
@@ -20,7 +20,7 @@ public:
 	{
 	}
 
-	Hash hash() const noexcept { return data_.hash_; }
+	HashValue hash() const noexcept { return data_.hash_; }
 	std::string title() const noexcept { return data_.title_; }
 	PropertyValue defaultValue() const noexcept { return data_.defaultValue_; }
 
@@ -50,7 +50,7 @@ class ConnectorMetadata
 {
 	class Data
 	{
-		Hash hash_;
+		HashValue hash_;
 		std::string title_;
 		ConnectorType type_;
 		bool isLocal_ { false };
@@ -64,7 +64,7 @@ public:
 	{
 	}
 
-	Hash hash() const noexcept { return data_.hash_; }
+	HashValue hash() const noexcept { return data_.hash_; }
 	std::string title() const noexcept { return data_.title_; }
 	ConnectorType type() const noexcept { return data_.type_; }
 	bool isLocal() const noexcept { return data_.isLocal_; }

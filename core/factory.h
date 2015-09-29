@@ -7,11 +7,11 @@ BEGIN_NAMESPACE(Core)
 class Factory
 {
 public:
-	using node_metadata_t = std::map<Hash, Metadata*>;
+	using node_metadata_t = std::map<HashValue, Metadata*>;
 
-	static void registerNodeMetadataProvider(Hash nodeType, Metadata* metadata) noexcept;
-	static std::shared_ptr<Node::Builder> makeNode(Hash nodeType) noexcept;
-	static Metadata* metadata(Hash nodeType) noexcept;
+	static void registerNodeMetadataProvider(HashValue nodeType, Metadata* metadata) noexcept;
+	static std::shared_ptr<Node::Builder> makeNode(HashValue nodeType) noexcept;
+	static Metadata* metadata(HashValue nodeType) noexcept;
 
 private:
 	static node_metadata_t nodes_;
