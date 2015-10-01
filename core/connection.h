@@ -1,5 +1,7 @@
 #pragma once
 #include "static.h"
+#include "metadata.h"
+#include "node.h"
 
 BEGIN_NAMESPACE(Core)
 

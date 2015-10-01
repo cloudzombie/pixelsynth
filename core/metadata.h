@@ -117,7 +117,7 @@ namespace std
 		size_t operator()(const Core::ConnectorMetadata& s) const
 		{
 			auto h1(hash<string>()(s.title()));
-			auto h2(hash<Core::ConnectorType>()(s.type()));
+			auto h2(hash<size_t>()(s.type() == Core::ConnectorType::Output ? 0 : 1));
 			return h1 ^ (h2 << 1);
 		}
 	};

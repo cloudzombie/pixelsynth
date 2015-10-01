@@ -89,7 +89,7 @@ private:
 		archive(*it++);
 
 		std::map<NodePtr, std::vector<NodePtr>> nodes;
-		std::for_each(it, end(impl_->nodes_), [&](auto& node) { nodes[parent(node)].emplace_back(node); });
+		std::for_each(it, end(impl_->nodes_), [&](auto& node) { nodes[this->parent(node)].emplace_back(node); });
 		archive(nodes);
 		archive(impl_->connections_);
 	}

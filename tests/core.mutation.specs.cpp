@@ -19,7 +19,7 @@ go_bandit([]() {
 			mutations.clear();
 
 			p = std::make_unique<Project>();
-			p->setMutationCallback([&mutations](auto& mutationInfo) { mutations.emplace_back(mutationInfo); });
+			p->setMutationCallback([&mutations](auto mutationInfo) { mutations.emplace_back(mutationInfo); });
 
 			// 0 = add nodes
 			p->mutate([&](auto& mut)
