@@ -1,5 +1,6 @@
 #include "connection.h"
 #include "metadata.h"
+#include "versioninfo.h"
 
 using Core::Connection;
 using Core::HashValue;

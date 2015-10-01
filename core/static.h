@@ -1,5 +1,8 @@
 #pragma once
 
+#define BEGIN_NAMESPACE(name) namespace name {
+#define END_NAMESPACE(name) }
+
 #include <functional>
 #include <map>
 #include <utility>
@@ -16,9 +19,6 @@
 
 #include "hash.h"
 #include "uuid.h"
-
-#define BEGIN_NAMESPACE(name) namespace name {
-#define END_NAMESPACE(name) }
 
 namespace cereal
 {

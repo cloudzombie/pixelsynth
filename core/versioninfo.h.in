@@ -1,0 +1,8 @@
+#pragma once
+
+struct VersionInfo
+{
+	static constexpr const char* GitSha1() { return "@GIT_SHA1@"; }
+	static constexpr const char* GitRefspec() { return "@GIT_REFSPEC@"; }
+	static constexpr const char* GitDescribe() { return "@GIT_DESCRIBE@"; }
+};
