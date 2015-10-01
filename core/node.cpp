@@ -3,9 +3,10 @@
 #include "factory.h"
 
 using Core::Node;
+using Core::Uuid;
 using Core::Factory;
 using Core::HashValue;
-using Core::Property;
+using Core::PropertyPtr;
 using Core::Metadata;
 using Core::ConnectorMetadata;
 using Core::ConnectorMetadataCollection;
@@ -19,6 +20,7 @@ Node::Node()
 Node::Node(HashValue nodeType)
 	: impl_(std::make_unique<Impl>())
 {
+	impl_->uuid_ = uuid4();
 	setNodeType(nodeType);
 }
 
@@ -32,7 +34,7 @@ void Node::setNodeType(HashValue nodeType)
 		for (auto&& meta : metadata->propertyMetadataCollection)
 		{
 			auto p = std::make_shared<Property>(nodeType, meta->hash());
-			impl_->properties_[meta->hash()] = p;
+			impl_->properties_.insert(p);
 		}
 
 		impl_->sharedConnectorMetadata_ = &metadata->connectorMetadataCollection;
@@ -54,16 +56,19 @@ Node& Node::operator=(const Node& rhs)
 Node::Node(Node&& rhs) = default;
 Node& Node::operator=(Node&& rhs) = default;
 
+Uuid Node::uuid() const noexcept
+{
+	return impl_->uuid_;
+}
+
+HashValue Node::nodeType() const noexcept
+{
+	return impl_->nodeType_;
+}
+
 const Node::properties_t& Node::properties() const
 {
 	return impl_->properties_;
-}
-
-const Property* Node::prop(const HashValue hash) const
-{
-	auto it = impl_->properties_.find(hash);
-	if (it == end(impl_->properties_)) return nullptr;
-	return it->second.get();
 }
 
 const ConnectorMetadataCollection& Node::connectorMetadata() const
@@ -72,7 +77,7 @@ const ConnectorMetadataCollection& Node::connectorMetadata() const
 	if (localHash != impl_->combinedHash_)
 	{
 		impl_->combinedConnectorMetadata_ = impl_->localConnectorMetadata_;
-		impl_->combinedConnectorMetadata_.insert(end(impl_->combinedConnectorMetadata_), begin(*impl_->sharedConnectorMetadata_), end(*impl_->sharedConnectorMetadata_));
+		if (impl_->sharedConnectorMetadata_) impl_->combinedConnectorMetadata_.insert(end(impl_->combinedConnectorMetadata_), begin(*impl_->sharedConnectorMetadata_), end(*impl_->sharedConnectorMetadata_));
 		impl_->combinedHash_ = localHash;
 	}
 	return impl_->combinedConnectorMetadata_;
@@ -114,12 +119,14 @@ Node& Node::operator=(Builder&& rhs)
 
 void Builder::mutateProperty(const HashValue hash, mutate_fn fn) noexcept
 {
-	auto it = impl_->properties_.find(hash);
+	auto it = find_if(begin(impl_->properties_), end(impl_->properties_), property_eq_hash(impl_->nodeType_, hash));
 	assert(it != end(impl_->properties_));
 
-	auto b = Property::Builder(*it->second);
+	auto b = Property::Builder(**it);
 	fn(b);
-	it->second = std::make_shared<Property>(std::move(b));
+
+	impl_->properties_.erase(it);
+	impl_->properties_.insert(it, std::make_shared<Property>(std::move(b)));
 }
 
 void Builder::addConnector(ConnectorMetadata::Builder&& connector) noexcept

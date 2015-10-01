@@ -5,6 +5,7 @@
 #include "property.h"
 #include <cereal/archives/xml.hpp>
 #include <cereal/types/map.hpp>
+#include <cereal/types/unordered_set.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/tuple.hpp>
 #include <cereal/types/vector.hpp>
@@ -44,5 +45,22 @@ namespace cereal
 	void serialize(Archive& ar, glm::vec3& vec3)
 	{
 		ar(vec3.x, vec3.y, vec3.z);
+	}
+
+	template <class Archive>
+	void save(Archive& ar, Core::Uuid const& uuid)
+	{
+		ar(uuid.ab);
+		ar(uuid.cd);
+	}
+
+	template <class Archive>
+	void load(Archive& ar, Core::Uuid& uuid)
+	{
+		uint64_t ab;
+		uint64_t cd;
+		ar(ab);
+		ar(cd);
+		uuid = Core::rebuild(ab, cd);
 	}
 }

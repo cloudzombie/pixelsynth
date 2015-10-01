@@ -132,3 +132,12 @@ namespace std
 		}
 	};
 }
+
+struct connector_metadata_eq_hash
+{
+	explicit connector_metadata_eq_hash(Core::ConnectorMetadataPtr ptr): ptr_(ptr) { }
+	bool operator()(Core::ConnectorMetadataPtr c1) const { return c1->hash() == ptr_->hash(); }
+
+private:
+	Core::ConnectorMetadataPtr ptr_;
+};

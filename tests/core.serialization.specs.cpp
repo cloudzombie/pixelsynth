@@ -48,6 +48,7 @@ go_bandit([]() {
 				cereal::XMLInputArchive archive(s);
 				archive(*p2);
 			}
+
 			auto node_a = findNode(*p2, "a");
 			auto node_b = findNode(*p2, "b");
 			auto node_c = findNode(*p2, "c");

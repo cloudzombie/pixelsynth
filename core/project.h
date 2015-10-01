@@ -10,6 +10,7 @@ public:
 	using history_t = std::vector<Document>;
 	using redohistory_t = std::stack<Document>;
 	using mutate_fn = std::function<void(Document::Builder&)>;
+	using mutation_callback_fn = std::function<void(std::shared_ptr<MutationInfo>)>;
 
 	Project();
 
@@ -17,6 +18,8 @@ public:
 	void redo() noexcept;
 	const Document& current() const noexcept;
 	void mutate(mutate_fn fn) noexcept;
+
+	void setMutationCallback(mutation_callback_fn fn) noexcept;
 
 private:	
 	friend class cereal::access;
@@ -42,6 +45,7 @@ private:
 	history_t history_;
 	redohistory_t redoStack_;
 	NodePtr root_;
+	mutation_callback_fn mutationCallback_;
 };
 
 END_NAMESPACE(Core)

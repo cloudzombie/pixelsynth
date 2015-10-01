@@ -7,6 +7,7 @@ using Core::PropertyMetadata;
 using Core::Factory;
 using Core::Frame;
 using Core::HashValue;
+using Core::PropertyPtr;
 using Core::PropertyValue;
 using Builder = Property::Builder;
 
@@ -110,6 +111,11 @@ PropertyValue Property::getPropertyValue(Frame frame) const noexcept
 const PropertyMetadata& Property::metadata() const noexcept
 {
 	return *impl_->metadata_;
+}
+
+bool Property::samePropertyHash(const HashValue otherNodeType, const HashValue otherPropertyType) const noexcept
+{
+	return impl_->nodeType_ == otherNodeType && impl_->propertyType_ == otherPropertyType;
 }
 
 void Property::setMetadata(HashValue nodeType, HashValue propertyType) noexcept

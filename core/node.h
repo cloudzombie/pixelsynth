@@ -8,11 +8,12 @@ BEGIN_NAMESPACE(Core)
 class Node
 {
 public:
-	using properties_t = std::map<HashValue, std::shared_ptr<const Property>>;
+	using properties_t = std::unordered_set<std::shared_ptr<const Property>>;
 
 private:
 	struct Impl
 	{
+		Uuid uuid_;
 		HashValue nodeType_;
 		properties_t properties_;
 		ConnectorMetadataCollection* sharedConnectorMetadata_;
@@ -33,8 +34,10 @@ public:
 	Node(Node&& rhs);
 	Node& operator=(Node&& rhs);
 
+	Uuid uuid() const noexcept;
+	HashValue nodeType() const noexcept;
+
 	const properties_t& properties() const;
-	const Property* prop(const HashValue hash) const;
 
 	const ConnectorMetadataCollection& connectorMetadata() const;
 
@@ -70,6 +73,7 @@ private:
 	template<class Archive>
 	void save(Archive& archive) const
 	{
+		archive(impl_->uuid_);
 		archive(impl_->nodeType_);
 		archive(impl_->properties_);
 		archive(impl_->localConnectorMetadata_);
@@ -78,13 +82,16 @@ private:
 	template<class Archive>
 	void load(Archive& archive)
 	{
+		archive(impl_->uuid_);
+
 		HashValue nodeType;
 		archive(nodeType);
 		setNodeType(nodeType);
 
-		std::map<HashValue, MutablePropertyPtr> props;
+		std::unordered_set<MutablePropertyPtr> props;
 		archive(props);
-		for (auto&& kvp : props) impl_->properties_[kvp.first] = kvp.second;
+		impl_->properties_.clear();
+		for (auto&& p : props) impl_->properties_.insert(p);
 	
 		std::vector<MutableConnectorMetadataPtr> localConnectors;
 		archive(localConnectors);
@@ -96,6 +103,14 @@ private:
 	void setNodeType(HashValue nodeType);
 
 	std::unique_ptr<Impl> impl_;
+};
+
+struct node_eq_uuid
+{
+	explicit node_eq_uuid(NodePtr compare_to): compare_to_(compare_to) { }
+	bool operator()(NodePtr c1) const { return c1->uuid() == compare_to_->uuid(); }
+private:
+	NodePtr compare_to_;
 };
 
 END_NAMESPACE(Core)

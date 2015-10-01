@@ -3,6 +3,8 @@
 #include <functional>
 #include <map>
 #include <utility>
+#include <unordered_set>
+#include <unordered_map>
 #include <memory>
 #include <iostream>
 #include <vector>
@@ -13,6 +15,7 @@
 #include <glm/vec3.hpp>
 
 #include "hash.h"
+#include "uuid.h"
 
 #define BEGIN_NAMESPACE(name) namespace name {
 #define END_NAMESPACE(name) }
@@ -52,4 +55,5 @@ namespace Core
 
 	class Project;
 	class Document;
+	struct MutationInfo;
 };

@@ -59,9 +59,12 @@ public:
 	}
 
 	const PropertyMetadata& metadata() const noexcept;
+	bool samePropertyHash(const HashValue otherNodeType, const HashValue otherPropertyType) const noexcept;
 
 private:
 	friend class cereal::access;
+	friend struct property_eq_hash;
+
 	template<class Archive>
 	void save(Archive& archive) const
 	{
@@ -101,6 +104,16 @@ private:
 
 	Property();
 	std::unique_ptr<Impl> impl_;
+};
+
+struct property_eq_hash
+{
+	explicit property_eq_hash(HashValue nodeType, HashValue propertyType): nodeType_(nodeType), propertyType_(propertyType) { }
+	explicit property_eq_hash(PropertyPtr other): nodeType_(other->impl_->nodeType_), propertyType_(other->impl_->propertyType_) { }
+	bool operator()(PropertyPtr c1) const { return c1->samePropertyHash(nodeType_, propertyType_); }
+private:
+	HashValue nodeType_;
+	HashValue propertyType_;
 };
 
 END_NAMESPACE(Core)

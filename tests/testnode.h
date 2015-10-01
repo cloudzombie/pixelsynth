@@ -52,24 +52,24 @@ struct TestNode
 
 	static void assertKeyframes(NodePtr n)
 	{
-		AssertThat(n->prop(hash("int"))->get<int>(0), Equals(-500));
-		AssertThat(n->prop(hash("int"))->get<int>(50), Equals(0));
-		AssertThat(n->prop(hash("int"))->get<int>(100), Equals(500));
+		AssertThat(prop(n, "int")->get<int>(0), Equals(-500));
+		AssertThat(prop(n, "int")->get<int>(50), Equals(0));
+		AssertThat(prop(n, "int")->get<int>(100), Equals(500));
 
-		AssertThat(n->prop(hash("double"))->get<double>(0), Equals(-500));
-		AssertThat(n->prop(hash("double"))->get<double>(50), Equals(0));
-		AssertThat(n->prop(hash("double"))->get<double>(100), Equals(500));
+		AssertThat(prop(n, "double")->get<double>(0), Equals(-500));
+		AssertThat(prop(n, "double")->get<double>(50), Equals(0));
+		AssertThat(prop(n, "double")->get<double>(100), Equals(500));
 
-		AssertThat(n->prop(hash("vec2"))->get<glm::vec2>(0), Equals(glm::vec2(-500, 50)));
-		AssertThat(n->prop(hash("vec2"))->get<glm::vec2>(50), Equals(glm::vec2(0, 0)));
-		AssertThat(n->prop(hash("vec2"))->get<glm::vec2>(100), Equals(glm::vec2(500, -50)));
+		AssertThat(prop(n, "vec2")->get<glm::vec2>(0), Equals(glm::vec2(-500, 50)));
+		AssertThat(prop(n, "vec2")->get<glm::vec2>(50), Equals(glm::vec2(0, 0)));
+		AssertThat(prop(n, "vec2")->get<glm::vec2>(100), Equals(glm::vec2(500, -50)));
 
-		AssertThat(n->prop(hash("vec3"))->get<glm::vec3>(0), Equals(glm::vec3(-500, 50, 100)));
-		AssertThat(n->prop(hash("vec3"))->get<glm::vec3>(50), Equals(glm::vec3(0, 0, 50)));
-		AssertThat(n->prop(hash("vec3"))->get<glm::vec3>(100), Equals(glm::vec3(500, -50, 0)));
+		AssertThat(prop(n, "vec3")->get<glm::vec3>(0), Equals(glm::vec3(-500, 50, 100)));
+		AssertThat(prop(n, "vec3")->get<glm::vec3>(50), Equals(glm::vec3(0, 0, 50)));
+		AssertThat(prop(n, "vec3")->get<glm::vec3>(100), Equals(glm::vec3(500, -50, 0)));
 
-		AssertThat(n->prop(hash("string"))->get<std::string>(0), Equals("a"));
-		AssertThat(n->prop(hash("string"))->get<std::string>(50), Equals("a"));
-		AssertThat(n->prop(hash("string"))->get<std::string>(100), Equals("b"));
+		AssertThat(prop(n, "string")->get<std::string>(0), Equals("a"));
+		AssertThat(prop(n, "string")->get<std::string>(50), Equals("a"));
+		AssertThat(prop(n, "string")->get<std::string>(100), Equals("b"));
 	}
 };
