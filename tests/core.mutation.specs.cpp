@@ -11,7 +11,7 @@ go_bandit([]() {
 		std::vector<std::shared_ptr<MutationInfo>> mutations;
 
 		NodePtr a0, b0, c0;
-		NodePtr a3, a4, a5;
+		NodePtr a3, a4, a5, a6, b6;
 
 		before_each([&]()
 		{
@@ -61,11 +61,24 @@ go_bandit([]() {
 			// 5 = undo add connector
 			p->undo();
 			a5 = findNode(*p, "a");
+
+			// 6 = connect a.out to b.in
+			p->mutate([&](Document::Builder& mut)
+			{
+				auto node_a = findNode(*p, "a");
+				auto node_b = findNode(*p, "b");
+				mut.connect(std::make_shared<Connection>(make_tuple(node_a, connector(node_a, "Out"), node_b, connector(node_b, "In"))));
+			});
+			a6 = findNode(*p, "a");
+			b6 = findNode(*p, "b");
+
+			// 7 = undo connect
+			p->undo();
 		});
 
 		it("should have emitted mutations", [&]()
 		{
-			AssertThat(mutations.size(), Equals(6));
+			AssertThat(mutations.size(), Equals(8));
 		});
 
 		it("should emit added nodes", [&]()
@@ -101,7 +114,7 @@ go_bandit([]() {
 			AssertThat(mutation->properties[a0].mutated.find(prop(a0, "int"))->second, Equals(prop(a3, "int")));
 		});
 
-		it("should emit changed connectors", [&]()
+		it("should emit added connectors", [&]()
 		{
 			auto mutation = mutations.at(4);
 			AssertThat(mutation->nodes.size(), Equals(1));
@@ -119,6 +132,20 @@ go_bandit([]() {
 
 			AssertThat(mutation->connectorMetadata.size(), Equals(1));
 			AssertThat(mutation->connectorMetadata[a4].removed, Has().All().EqualTo(connector(a4, "Foo")));
+		});
+
+		it("should emit added connections", [&]()
+		{
+			auto mutation = mutations.at(6);
+			AssertThat(mutation->connections.added.size(), Equals(1));
+			AssertThat((*mutation->connections.added.begin())->connection(), Equals(make_tuple(a6, connector(a6, "Out"), b6, connector(b6, "In"))));
+		});
+
+		it("should emit removed connections", [&]()
+		{
+			auto mutation = mutations.at(7);
+			AssertThat(mutation->connections.removed.size(), Equals(1));
+			AssertThat((*mutation->connections.removed.begin())->connection(), Equals(make_tuple(a6, connector(a6, "Out"), b6, connector(b6, "In"))));
 		});
 	});
 });

@@ -64,4 +64,12 @@ private:
 	std::unique_ptr<Impl> impl_;
 };
 
+struct connection_eq
+{
+	explicit connection_eq(ConnectionPtr compare_to): compare_to_(compare_to) { }
+	bool operator()(ConnectionPtr c1) const { return c1->connection() == compare_to_->connection(); }
+private:
+	ConnectionPtr compare_to_;
+};
+
 END_NAMESPACE(Core)

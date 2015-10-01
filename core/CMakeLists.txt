@@ -1,5 +1,6 @@
 file(GLOB_RECURSE src ./*.cpp ./*.h)
-
+list(REMOVE_ITEM src ${CMAKE_CURRENT_SOURCE_DIR}/./static.cpp)
+list(INSERT src 0 ${CMAKE_CURRENT_SOURCE_DIR}/./static.cpp)
 source_group(src FILES ${src})
 add_library(core ${src})
 
