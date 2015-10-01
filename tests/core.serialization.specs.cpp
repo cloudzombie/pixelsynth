@@ -16,9 +16,9 @@ go_bandit([]() {
 			p = std::make_unique<Project>();
 			p->mutate([&](auto& mut)
 			{
-				mut.append(nullptr, { makeNode(hash("TestNode"), "a") });
-				mut.append(nullptr, { makeNode(hash("TestNode"), "b") });
-				mut.append(nullptr, { makeNode(hash("TestNode"), "c") });
+				mut.append({ makeNode(hash("TestNode"), "a") });
+				mut.append({ makeNode(hash("TestNode"), "b") });
+				mut.append({ makeNode(hash("TestNode"), "c") });
 			});
 			p->mutate([&](Document::Builder& mut)
 			{

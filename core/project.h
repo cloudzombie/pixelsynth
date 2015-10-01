@@ -14,6 +14,8 @@ public:
 
 	Project();
 
+	NodePtr root() const noexcept { return root_; }
+
 	void undo() noexcept;
 	void redo() noexcept;
 	const Document& current() const noexcept;

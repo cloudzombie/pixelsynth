@@ -42,14 +42,16 @@ const Document::connections_t& Document::connections() const noexcept
 
 NodePtr Document::parent(NodePtr node) const noexcept
 {
+	assert(node);
 	auto it = iteratorFor(this->nodes(), node);
 	auto parent = tree_t::parent(it);
-	if (parent.node == nullptr) return nullptr;
+	if (parent.node == nullptr) return nullptr; // root has no parent
 	return *parent;
 }
 
 size_t Document::childCount(NodePtr node) const noexcept
 {
+	assert(node);
 	return this->nodes().size(iteratorFor(this->nodes(), node)) - 1; // - 1 because it includes the node itself
 }
 
@@ -62,7 +64,7 @@ Document Document::buildRootDocument(NodePtr root) noexcept
 
 Document::tree_t::iterator Document::iteratorFor(const tree_t& tree, NodePtr node) noexcept
 {
-	if (!node) return tree.begin();
+	assert(node);
 	auto it = find(begin(tree), end(tree), node);
 	assert(it != end(tree));
 	return it;
@@ -163,8 +165,14 @@ void Builder::fixupConnections()
 	impl_->connections_ = fixed;
 }
 
+void Builder::append(std::initializer_list<NodePtr> nodes) noexcept
+{
+	append(*impl_->nodes_.begin(), nodes);
+}
+
 void Builder::append(NodePtr parent, std::initializer_list<NodePtr> nodes) noexcept
 {
+	assert(parent);
 	auto parentPos = iteratorFor(impl_->nodes_, parent);
 
 	for (auto&& node : nodes)

@@ -33,7 +33,7 @@ public:
 	const connections_t& connections() const noexcept;
 
 	NodePtr parent(NodePtr node) const noexcept;
-	size_t childCount(NodePtr node = nullptr) const noexcept;
+	size_t childCount(NodePtr node) const noexcept;
 
 	class Builder
 	{
@@ -53,7 +53,9 @@ public:
 
 		void mutate(NodePtr node, mutate_fn fn) noexcept;
 
+		void append(std::initializer_list<NodePtr> nodes) noexcept;
 		void append(NodePtr parent, std::initializer_list<NodePtr> nodes) noexcept;
+
 		void erase(std::initializer_list<NodePtr> nodes) noexcept;
 		void eraseChildren(std::initializer_list<NodePtr> nodes) noexcept;
 		void reparent(NodePtr parent, std::initializer_list<NodePtr> nodes) noexcept;

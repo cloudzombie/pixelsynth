@@ -9,13 +9,16 @@ using Core::MutationInfo;
 using Core::Node;
 using Core::NodePtr;
 using Core::PropertyPtr;
+using Core::node_eq_uuid;
 
+// In case the result is a map keyed off NodePtr
 template <typename DestContainer, typename SrcContainer>
 struct get_set_result_container
 {
 	DestContainer& operator()(SrcContainer& result, const NodePtr node) { return result[node]; }
 };
 
+// In case the result is just a flat container
 template <typename DestContainer>
 struct get_set_result_container<DestContainer, MutationInfo::ConnectionMutationInfo>
 {
@@ -134,6 +137,25 @@ struct extract_connection_containers
 	std::pair<ConnectionPtr, std::vector<ConnectionPtr>> operator()(const ConnectionPtr c) const { return { c, { c } }; }
 };
 
+MutationInfo::reparenting_t generateReparentingInfo(const Document& prev, const Document& cur) noexcept
+{
+	MutationInfo::reparenting_t result;
+
+	for (auto&& prevNode: prev.nodes())
+	{
+		auto curNode = std::find_if(cbegin(cur.nodes()), cend(cur.nodes()), node_eq_uuid(prevNode));
+		if (curNode == cend(cur.nodes())) continue;
+
+		// Node already existed, so see if it got reparented
+		auto prevParent = prev.parent(prevNode);
+		auto curParent = cur.parent(*curNode);
+		if (prevParent == curParent) continue;
+
+		result[prevNode] = { prevParent, curParent };
+	}
+	return result;
+}
+
 std::shared_ptr<MutationInfo> MutationInfo::compare(const Document& prev, const Document& cur) noexcept
 {
 	auto info = std::make_shared<MutationInfo>();
@@ -149,6 +171,9 @@ std::shared_ptr<MutationInfo> MutationInfo::compare(const Document& prev, const 
 
 	// Get connection mutations
 	info->connections = generateMutationInfo<ConnectionMutationInfo, ConnectionMutationInfo, connection_eq, extract_connection_containers>(prev.connections(), cur.connections());
+
+	// Get reparenting mutations
+	info->reparenting = generateReparentingInfo(prev, cur);
 
 	return info;
 }

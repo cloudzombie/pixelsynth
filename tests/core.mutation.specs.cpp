@@ -12,6 +12,7 @@ go_bandit([]() {
 
 		NodePtr a0, b0, c0;
 		NodePtr a3, a4, a5, a6, b6;
+		NodePtr a8, b8, c8;
 
 		before_each([&]()
 		{
@@ -26,7 +27,7 @@ go_bandit([]() {
 				a0 = makeNode(hash("TestNode"), "a");
 				b0 = makeNode(hash("TestNode"), "b");
 				c0 = makeNode(hash("TestNode"), "c");
-				mut.append(nullptr, { a0, b0, c0 });
+				mut.append({ a0, b0, c0 });
 			});
 
 			// 1 = remove node
@@ -74,11 +75,26 @@ go_bandit([]() {
 
 			// 7 = undo connect
 			p->undo();
+
+			// 8 = reparent a and b under c
+			p->mutate([&](Document::Builder& mut)
+			{
+				auto node_a = findNode(*p, "a");
+				auto node_b = findNode(*p, "b");
+				auto node_c = findNode(*p, "c");
+				mut.reparent(node_c, { node_a, node_b });
+			});
+			a8 = findNode(*p, "a");
+			b8 = findNode(*p, "b");
+			c8 = findNode(*p, "c");
+
+			// 9 = undo reparent
+			p->undo();
 		});
 
 		it("should have emitted mutations", [&]()
 		{
-			AssertThat(mutations.size(), Equals(8));
+			AssertThat(mutations.size(), Equals(10));
 		});
 
 		it("should emit added nodes", [&]()
@@ -146,6 +162,26 @@ go_bandit([]() {
 			auto mutation = mutations.at(7);
 			AssertThat(mutation->connections.removed.size(), Equals(1));
 			AssertThat((*mutation->connections.removed.begin())->connection(), Equals(make_tuple(a6, connector(a6, "Out"), b6, connector(b6, "In"))));
+		});
+
+		it("should emit reparenting from root to lower", [&]()
+		{
+			auto mutation = mutations.at(8);
+			AssertThat(mutation->reparenting.size(), Equals(2));
+			AssertThat(mutation->reparenting[a8].first, Equals(p->root()));
+			AssertThat(mutation->reparenting[b8].first, Equals(p->root()));
+			AssertThat(mutation->reparenting[a8].second, Equals(c8));
+			AssertThat(mutation->reparenting[b8].second, Equals(c8));
+		});
+
+		it("should emit reparenting from lower to root", [&]()
+		{
+			auto mutation = mutations.at(9);
+			AssertThat(mutation->reparenting.size(), Equals(2));
+			AssertThat(mutation->reparenting[a8].first, Equals(c8));
+			AssertThat(mutation->reparenting[b8].first, Equals(c8));
+			AssertThat(mutation->reparenting[a8].second, Equals(p->root()));
+			AssertThat(mutation->reparenting[b8].second, Equals(p->root()));
 		});
 	});
 });
