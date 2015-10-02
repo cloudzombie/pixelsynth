@@ -8,7 +8,7 @@ BEGIN_NAMESPACE(Core)
 class Node
 {
 public:
-	using properties_t = std::unordered_set<std::shared_ptr<const Property>>;
+	using properties_t = std::vector<std::shared_ptr<const Property>>;
 
 private:
 	struct Impl
@@ -88,10 +88,10 @@ private:
 		archive(nodeType);
 		setNodeType(nodeType);
 
-		std::unordered_set<MutablePropertyPtr> props;
+		std::vector<MutablePropertyPtr> props;
 		archive(props);
 		impl_->properties_.clear();
-		for (auto&& p : props) impl_->properties_.insert(p);
+		for (auto&& p : props) impl_->properties_.emplace_back(p);
 	
 		std::vector<MutableConnectorMetadataPtr> localConnectors;
 		archive(localConnectors);
@@ -114,3 +114,18 @@ private:
 };
 
 END_NAMESPACE(Core)
+
+namespace std
+{
+	template<>
+	struct hash<Core::NodePtr>
+	{
+		typedef Core::NodePtr argument_type;
+		typedef size_t result_type;
+
+		result_type operator()(argument_type const& node) const
+		{
+			return hash<uint64_t>()(node->uuid().ab) ^ hash<uint64_t>()(node->uuid().cd);
+		}
+	};
+}

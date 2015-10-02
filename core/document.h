@@ -33,6 +33,7 @@ public:
 	const connections_t& connections() const noexcept;
 
 	NodePtr parent(NodePtr node) const noexcept;
+	size_t childIndex(NodePtr node) const noexcept;
 	size_t childCount(NodePtr node) const noexcept;
 
 	class Builder

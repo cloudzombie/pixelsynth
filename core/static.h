@@ -17,7 +17,7 @@
 #include <glm/vec2.hpp>
 #include <glm/vec3.hpp>
 
-#include "hash.h"
+#include "stringhash.h"
 #include "uuid.h"
 
 namespace cereal

@@ -34,7 +34,7 @@ void Node::setNodeType(HashValue nodeType)
 		for (auto&& meta : metadata->propertyMetadataCollection)
 		{
 			auto p = std::make_shared<Property>(nodeType, meta->hash());
-			impl_->properties_.insert(p);
+			impl_->properties_.emplace_back(p);
 		}
 
 		impl_->sharedConnectorMetadata_ = &metadata->connectorMetadataCollection;
@@ -76,8 +76,9 @@ const ConnectorMetadataCollection& Node::connectorMetadata() const
 	auto localHash = std::hash<ConnectorMetadataCollection>()(impl_->localConnectorMetadata_);
 	if (localHash != impl_->combinedHash_)
 	{
-		impl_->combinedConnectorMetadata_ = impl_->localConnectorMetadata_;
+		impl_->combinedConnectorMetadata_.clear();
 		if (impl_->sharedConnectorMetadata_) impl_->combinedConnectorMetadata_.insert(end(impl_->combinedConnectorMetadata_), begin(*impl_->sharedConnectorMetadata_), end(*impl_->sharedConnectorMetadata_));
+		impl_->combinedConnectorMetadata_.insert(end(impl_->combinedConnectorMetadata_), begin(impl_->localConnectorMetadata_), end(impl_->localConnectorMetadata_));
 		impl_->combinedHash_ = localHash;
 	}
 	return impl_->combinedConnectorMetadata_;

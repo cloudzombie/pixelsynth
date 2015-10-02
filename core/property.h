@@ -59,6 +59,7 @@ public:
 	}
 
 	const PropertyMetadata& metadata() const noexcept;
+	bool samePropertyHash(const PropertyPtr other) const noexcept;
 	bool samePropertyHash(const HashValue otherNodeType, const HashValue otherPropertyType) const noexcept;
 
 private:

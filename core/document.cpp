@@ -49,6 +49,13 @@ NodePtr Document::parent(NodePtr node) const noexcept
 	return *parent;
 }
 
+size_t Document::childIndex(NodePtr node) const noexcept
+{
+	assert(node);
+	auto it = iteratorFor(this->nodes(), node);
+	return this->nodes().index(it);
+}
+
 size_t Document::childCount(NodePtr node) const noexcept
 {
 	assert(node);

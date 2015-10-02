@@ -113,6 +113,11 @@ const PropertyMetadata& Property::metadata() const noexcept
 	return *impl_->metadata_;
 }
 
+bool Property::samePropertyHash(const PropertyPtr other) const noexcept
+{
+	return impl_->nodeType_ == other->impl_->nodeType_ && impl_->propertyType_ == other->impl_->propertyType_;
+}
+
 bool Property::samePropertyHash(const HashValue otherNodeType, const HashValue otherPropertyType) const noexcept
 {
 	return impl_->nodeType_ == otherNodeType && impl_->propertyType_ == otherPropertyType;

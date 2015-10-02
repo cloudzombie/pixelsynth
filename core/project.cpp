@@ -1,5 +1,5 @@
 #include "project.h"
-#include "mutation-info.h"
+#include "mutation_info.h"
 
 using Core::Document;
 using Core::MutationInfo;
