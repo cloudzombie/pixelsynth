@@ -12,7 +12,6 @@ using Core::PropertyPtr;
 using Core::node_eq_uuid;
 
 using ChangeType = MutationInfo::ChangeType;
-using Index = MutationInfo::Index;
 template <typename T>
 using Change = MutationInfo::Change<T>;
 template <typename T>
@@ -88,9 +87,9 @@ struct Inserter
 {
 	ChangeSet<Data> data;
 
-	void operator()(Input prev, Input cur, ChangeType type, Index index)
+	void operator()(Input prev, Input cur, ChangeType type, NodePtr parent)
 	{
-		data.emplace_back(Change<Data>(prev, cur, type, index));
+		data.emplace_back(Change<Data>(prev, cur, type, parent));
 	}
 };
 
@@ -100,9 +99,9 @@ struct Inserter<std::tuple<NodePtr, Data, size_t>, Data>
 {
 	ChangeSet<Data> data;
 
-	void operator()(std::tuple<NodePtr, Data, size_t> prev, std::tuple<NodePtr, Data, size_t> cur, ChangeType type, Index index)
+	void operator()(std::tuple<NodePtr, Data, size_t> prev, std::tuple<NodePtr, Data, size_t> cur, ChangeType type, NodePtr parent)
 	{
-		data.emplace_back(Change<Data>(std::get<TupleIndex::Data>(prev), std::get<TupleIndex::Data>(cur), type, index));
+		data.emplace_back(Change<Data>(std::get<TupleIndex::Data>(prev), std::get<TupleIndex::Data>(cur), type, parent));
 	}
 };
 
@@ -110,9 +109,9 @@ struct Inserter<std::tuple<NodePtr, Data, size_t>, Data>
 struct NullIndexProvider
 {
 	template <typename Container, typename Iterator>
-	Index operator()(const Document& doc, const Container& container, Iterator& iterator)
+	NodePtr operator()(const Document& doc, const Container& container, Iterator& iterator)
 	{
-		return Index(0, nullptr);
+		return nullptr;
 	}
 };
 
@@ -120,9 +119,9 @@ struct NullIndexProvider
 struct TupleIndexProvider
 {
 	template <typename Container, typename Iterator>
-	Index operator()(const Document& doc, const Container& container, Iterator& iterator)
+	NodePtr operator()(const Document& doc, const Container& container, Iterator& iterator)
 	{
-		return Index(std::get<TupleIndex::Position>(*iterator), std::get<TupleIndex::Node>(*iterator));
+		return std::get<TupleIndex::Node>(*iterator);
 	}
 };
 
@@ -130,9 +129,9 @@ struct TupleIndexProvider
 struct TreeParentIndexProvider
 {
 	template <typename Container, typename Iterator>
-	Index operator()(const Document& doc, const Container& container, Iterator& iterator)
+	NodePtr operator()(const Document& doc, const Container& container, Iterator& iterator)
 	{
-		return Index(doc.childIndex(*iterator), doc.parent(*iterator));
+		return doc.parent(*iterator);
 	}
 };
 

@@ -80,16 +80,6 @@ namespace snowhouse
 		}
 	};
 
-	template<>
-	struct Stringizer<Core::MutationInfo::Index>
-	{
-		static std::string ToString(const Core::MutationInfo::Index& n)
-		{
-			auto node = Stringizer<Core::NodePtr>::ToString(n.parent);
-			return "Index(" + std::to_string(n.position) + ", " + node + ")";
-		}
-	};
-
 	template<typename T>
 	struct Stringizer<Core::MutationInfo::Change<T>>
 	{
@@ -112,7 +102,7 @@ namespace snowhouse
 				+ ", " 
 				+ type 
 				+ ", " 
-				+ Stringizer<Core::MutationInfo::Index>::ToString(c.index)
+				+ Stringizer<Core::NodePtr>::ToString(c.parent)
 				+ ")";
 		}
 	};

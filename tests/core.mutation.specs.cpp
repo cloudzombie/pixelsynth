@@ -5,7 +5,6 @@ using namespace bandit;
 
 template <typename T>
 using Change = MutationInfo::Change<T>;
-using Index = MutationInfo::Index;
 using ChangeType = MutationInfo::ChangeType;
 
 go_bandit([]() {
@@ -109,57 +108,57 @@ go_bandit([]() {
 		{
 			auto mutation = mutations.at(0);
 			AssertThat(mutation->nodes.size(), Equals(3));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, a0, ChangeType::Added, Index(0, p->root()))));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, b0, ChangeType::Added, Index(1, p->root()))));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, c0, ChangeType::Added, Index(2, p->root()))));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, a0, ChangeType::Added, p->root())));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, b0, ChangeType::Added, p->root())));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, c0, ChangeType::Added, p->root())));
 		});
 
 		it("should emit removed nodes", [&]()
 		{
 			auto mutation = mutations.at(1);
 			AssertThat(mutation->nodes.size(), Equals(1));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(b0, nullptr, ChangeType::Removed, Index(1, p->root()))));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(b0, nullptr, ChangeType::Removed, p->root())));
 		});
 
 		it("should emit nodes re-added after undo", [&]()
 		{
 			auto mutation = mutations.at(2);
 			AssertThat(mutation->nodes.size(), Equals(1));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, b0, ChangeType::Added, Index(1, p->root()))));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, b0, ChangeType::Added, p->root())));
 		});
 
 		it("should emit changed properties", [&]()
 		{
 			auto mutation = mutations.at(3);
 			AssertThat(mutation->nodes.size(), Equals(1));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(a0, a3, ChangeType::Mutated, Index(0, p->root()))));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(a0, a3, ChangeType::Mutated, p->root())));
 
 			AssertThat(mutation->properties.size(), Equals(5));
-			AssertThat(mutation->properties, Contains(Change<PropertyPtr>(prop(a0, "int"), prop(a3, "int"), ChangeType::Mutated, Index(propIndex(a3, "int"), a3))));
-			AssertThat(mutation->properties, Contains(Change<PropertyPtr>(prop(a0, "double"), prop(a3, "double"), ChangeType::Mutated, Index(propIndex(a3, "double"), a3))));
-			AssertThat(mutation->properties, Contains(Change<PropertyPtr>(prop(a0, "vec2"), prop(a3, "vec2"), ChangeType::Mutated, Index(propIndex(a3, "vec2"), a3))));
-			AssertThat(mutation->properties, Contains(Change<PropertyPtr>(prop(a0, "vec3"), prop(a3, "vec3"), ChangeType::Mutated, Index(propIndex(a3, "vec3"), a3))));
-			AssertThat(mutation->properties, Contains(Change<PropertyPtr>(prop(a0, "string"), prop(a3, "string"), ChangeType::Mutated, Index(propIndex(a3, "string"), a3))));
+			AssertThat(mutation->properties, Contains(Change<PropertyPtr>(prop(a0, "int"), prop(a3, "int"), ChangeType::Mutated, a3)));
+			AssertThat(mutation->properties, Contains(Change<PropertyPtr>(prop(a0, "double"), prop(a3, "double"), ChangeType::Mutated, a3)));
+			AssertThat(mutation->properties, Contains(Change<PropertyPtr>(prop(a0, "vec2"), prop(a3, "vec2"), ChangeType::Mutated, a3)));
+			AssertThat(mutation->properties, Contains(Change<PropertyPtr>(prop(a0, "vec3"), prop(a3, "vec3"), ChangeType::Mutated, a3)));
+			AssertThat(mutation->properties, Contains(Change<PropertyPtr>(prop(a0, "string"), prop(a3, "string"), ChangeType::Mutated, a3)));
 		});
 
 		it("should emit added connectors", [&]()
 		{
 			auto mutation = mutations.at(4);
 			AssertThat(mutation->nodes.size(), Equals(1));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(a3, a4, ChangeType::Mutated, Index(0, p->root()))));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(a3, a4, ChangeType::Mutated, p->root())));
 
 			AssertThat(mutation->connectors.size(), Equals(1));
-			AssertThat(mutation->connectors, Contains(Change<ConnectorMetadataPtr>(nullptr, connector(a4, "Foo"), ChangeType::Added, Index(connectorIndex(a4, "Foo"), a4))));
+			AssertThat(mutation->connectors, Contains(Change<ConnectorMetadataPtr>(nullptr, connector(a4, "Foo"), ChangeType::Added, a4)));
 		});
 
 		it("should emit removed connectors", [&]()
 		{
 			auto mutation = mutations.at(5);
 			AssertThat(mutation->nodes.size(), Equals(1));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(a4, a5, ChangeType::Mutated, Index(0, p->root()))));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(a4, a5, ChangeType::Mutated, p->root())));
 
 			AssertThat(mutation->connectors.size(), Equals(1));
-			AssertThat(mutation->connectors, Contains(Change<ConnectorMetadataPtr>(connector(a4, "Foo"), nullptr, ChangeType::Removed, Index(connectorIndex(a4, "Foo"), a4))));
+			AssertThat(mutation->connectors, Contains(Change<ConnectorMetadataPtr>(connector(a4, "Foo"), nullptr, ChangeType::Removed, a4)));
 		});
 
 		it("should emit added connections", [&]()
@@ -180,16 +179,16 @@ go_bandit([]() {
 		{
 			auto mutation = mutations.at(8);
 			AssertThat(mutation->nodes.size(), Equals(2));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(a8, a8, ChangeType::Mutated, Index(0, c8))));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(b8, b8, ChangeType::Mutated, Index(1, c8))));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(a8, a8, ChangeType::Mutated, c8)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(b8, b8, ChangeType::Mutated, c8)));
 		});
 
 		it("should emit reparenting from lower to root", [&]()
 		{
 			auto mutation = mutations.at(9);
 			AssertThat(mutation->nodes.size(), Equals(2));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(a8, a8, ChangeType::Mutated, Index(0, p->root()))));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(b8, b8, ChangeType::Mutated, Index(1, p->root()))));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(a8, a8, ChangeType::Mutated, p->root())));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(b8, b8, ChangeType::Mutated, p->root())));
 		});
 	});
 });

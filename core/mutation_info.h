@@ -9,41 +9,19 @@ struct MutationInfo
 
 	enum class ChangeType { Added, Removed, Mutated };
 
-	struct Index
-	{
-		size_t position;
-		NodePtr parent;
-
-		explicit Index(size_t position, NodePtr parent = nullptr)
-			: position(position)
-			, parent(parent)
-		{
-		}
-
-		friend bool operator==(const Index& lhs, const Index& rhs)
-		{
-			return lhs.position == rhs.position
-				&& lhs.parent == rhs.parent;
-		}
-
-		friend bool operator!=(const Index& lhs, const Index& rhs)
-		{
-			return !(lhs == rhs);
-		}
-	};
-
 	template <typename T>
 	struct Change
 	{
-		T prev, cur;
+		T prev;
+		T cur;
 		ChangeType type;
-		Index index;
+		NodePtr parent;
 
-		Change(const T& prev, const T& cur, ChangeType type, const Index& index)
+		Change(const T prev, const T cur, ChangeType type, const NodePtr parent)
 			: prev(prev)
 			, cur(cur)
 			, type(type)
-			, index(index)
+			, parent(parent)
 		{
 		}
 
@@ -52,7 +30,7 @@ struct MutationInfo
 			return lhs.prev == rhs.prev
 				&& lhs.cur == rhs.cur
 				&& lhs.type == rhs.type
-				&& lhs.index == rhs.index;
+				&& lhs.parent == rhs.parent;
 		}
 
 		friend bool operator!=(const Change& lhs, const Change& rhs)
