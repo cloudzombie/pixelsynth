@@ -8,56 +8,7 @@
 #include <core/node.h>
 #include <core/project.h>
 #include <core/mutation_info.h>
-
-inline Core::PropertyPtr prop(const Core::NodePtr& node, const char* propertyTitle)
-{
-	auto prop = find_if(begin(node->properties()), end(node->properties()), Core::property_eq_hash(node->nodeType(), Core::hash(propertyTitle)));
-	if (prop == end(node->properties())) return nullptr;
-	return *prop;
-}
-
-inline size_t propIndex(const Core::NodePtr& node, const char* propertyTitle)
-{
-	auto prop = find_if(begin(node->properties()), end(node->properties()), Core::property_eq_hash(node->nodeType(), Core::hash(propertyTitle)));
-	return distance(begin(node->properties()), prop);
-}
-
-template <typename T>
-inline T prop(const Core::NodePtr& node, const char* propertyTitle, Core::Frame frame)
-{
-	auto p = prop(node, propertyTitle);
-	if (!p) return T();
-	return p->get<T>(frame);
-}
-
-inline std::shared_ptr<const Core::Node> findNode(Core::Project& project, std::string nodeTitle)
-{
-	auto result = std::find_if(cbegin(project.current().nodes()), cend(project.current().nodes()), [nodeTitle](auto& node)
-	{
-		return prop<std::string>(node, "Title", 0) == nodeTitle;
-	});
-	if (result == cend(project.current().nodes())) return std::shared_ptr<const Core::Node>();
-	return *result;
-}
-
-inline Core::ConnectorMetadataPtr connector(std::shared_ptr<const Core::Node> node, std::string connectorTitle)
-{
-	auto result = find_if(cbegin(node->connectorMetadata()), cend(node->connectorMetadata()), [connectorTitle](auto& metadata)
-	{
-		return metadata->hash() == Core::hash(connectorTitle.c_str());
-	});
-	if (result == cend(node->connectorMetadata())) return nullptr;
-	return *result;
-}
-
-inline size_t connectorIndex(std::shared_ptr<const Core::Node> node, std::string connectorTitle)
-{
-	auto result = find_if(cbegin(node->connectorMetadata()), cend(node->connectorMetadata()), [connectorTitle](auto& metadata)
-	{
-		return metadata->hash() == Core::hash(connectorTitle.c_str());
-	});
-	return distance(cbegin(node->connectorMetadata()), result);
-}
+#include <core/utils.h>
 
 namespace snowhouse
 {
@@ -67,7 +18,7 @@ namespace snowhouse
 		static std::string ToString(const Core::NodePtr& n)
 		{
 			if (!n) return "nullptr";
-			return "Node(" + prop<std::string>(n, "Title", 0) + ")";
+			return "Node(" + Core::prop<std::string>(n, "$Title", 0) + ")";
 		}
 	};
 

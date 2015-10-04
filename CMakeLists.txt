@@ -16,6 +16,7 @@ include(cmake/cotire/CMake/cotire.cmake)
 include(cmake/os-libraries.cmake)
 include(cmake/glfw.cmake)
 include(cmake/compiler.cmake)
+find_package(Qt5 5.5.0 REQUIRED COMPONENTS Core Widgets)
 
 # Header-only libraries
 include_directories(${CMAKE_SOURCE_DIR})
@@ -27,4 +28,6 @@ include_directories(${CMAKE_SOURCE_DIR}/libs/variant/include)
 
 # Subprojects
 add_subdirectory(core)
+add_subdirectory(editor-lib)
+add_subdirectory(editor)
 add_subdirectory(tests)

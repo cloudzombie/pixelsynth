@@ -10,7 +10,7 @@ struct TestNode
 	{
 		return
 		{
-			p("Title").ofType<std::string>().build(),
+			p("$Title").ofType<std::string>().build(),
 			p("int").ofType<int>().build(),
 			p("double").ofType<double>().build(),
 			p("vec2").ofType<glm::vec2>().build(),

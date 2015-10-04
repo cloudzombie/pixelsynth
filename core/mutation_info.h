@@ -16,12 +16,14 @@ struct MutationInfo
 		T cur;
 		ChangeType type;
 		NodePtr parent;
+		size_t index;
 
-		Change(const T prev, const T cur, ChangeType type, const NodePtr parent)
+		Change(const T prev, const T cur, ChangeType type, const NodePtr parent, size_t index)
 			: prev(prev)
 			, cur(cur)
 			, type(type)
 			, parent(parent)
+			, index(index)
 		{
 		}
 
@@ -30,22 +32,52 @@ struct MutationInfo
 			return lhs.prev == rhs.prev
 				&& lhs.cur == rhs.cur
 				&& lhs.type == rhs.type
-				&& lhs.parent == rhs.parent;
+				&& lhs.parent == rhs.parent
+				&& lhs.index == rhs.index;
 		}
 
 		friend bool operator!=(const Change& lhs, const Change& rhs)
 		{
 			return !(lhs == rhs);
 		}
+
+		friend bool operator<(const Change& lhs, const Change& rhs)
+		{
+			return lhs.index < rhs.index;
+		}
+
+		friend bool operator<=(const Change& lhs, const Change& rhs)
+		{
+			return !(rhs < lhs);
+		}
+
+		friend bool operator>(const Change& lhs, const Change& rhs)
+		{
+			return rhs < lhs;
+		}
+
+		friend bool operator>=(const Change& lhs, const Change& rhs)
+		{
+			return !(lhs < rhs);
+		}
 	};
 
 	template <typename T>
-	using ChangeSet = std::vector<Change<T>>;
+	using ChangeSet = std::set<Change<T>>;
 
 	ChangeSet<NodePtr> nodes;
 	ChangeSet<PropertyPtr> properties;
 	ChangeSet<ConnectorMetadataPtr> connectors;
 	ChangeSet<ConnectionPtr> connections;
+
+	const Document& prev;
+	const Document& cur;
+
+	MutationInfo(const Document& prev, const Document& cur)
+		: prev(prev),
+		  cur(cur)
+	{
+	}
 };
 
 END_NAMESPACE(Core)

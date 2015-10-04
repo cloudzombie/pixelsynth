@@ -17,6 +17,8 @@ using Change = MutationInfo::Change<T>;
 template <typename T>
 using ChangeSet = MutationInfo::ChangeSet<T>;
 
+using Index = std::pair<NodePtr, size_t>;
+
 /*
 	When determing what has mutated there can be different types of data to check:
 	* A NodeNodePair, because a NodePtr may have changed into a new NodePtr whenever its properties or connectors has changed
@@ -87,9 +89,9 @@ struct Inserter
 {
 	ChangeSet<Data> data;
 
-	void operator()(Input prev, Input cur, ChangeType type, NodePtr parent)
+	void operator()(Input prev, Input cur, ChangeType type, Index index)
 	{
-		data.emplace_back(Change<Data>(prev, cur, type, parent));
+		data.insert(Change<Data>(prev, cur, type, index.first, index.second));
 	}
 };
 
@@ -99,9 +101,9 @@ struct Inserter<std::tuple<NodePtr, Data, size_t>, Data>
 {
 	ChangeSet<Data> data;
 
-	void operator()(std::tuple<NodePtr, Data, size_t> prev, std::tuple<NodePtr, Data, size_t> cur, ChangeType type, NodePtr parent)
+	void operator()(std::tuple<NodePtr, Data, size_t> prev, std::tuple<NodePtr, Data, size_t> cur, ChangeType type, Index index)
 	{
-		data.emplace_back(Change<Data>(std::get<TupleIndex::Data>(prev), std::get<TupleIndex::Data>(cur), type, parent));
+		data.insert(Change<Data>(std::get<TupleIndex::Data>(prev), std::get<TupleIndex::Data>(cur), type, index.first, index.second));
 	}
 };
 
@@ -109,9 +111,9 @@ struct Inserter<std::tuple<NodePtr, Data, size_t>, Data>
 struct NullIndexProvider
 {
 	template <typename Container, typename Iterator>
-	NodePtr operator()(const Document& doc, const Container& container, Iterator& iterator)
+	Index operator()(const Document& doc, const Container& container, Iterator& iterator)
 	{
-		return nullptr;
+		return { nullptr, 0 };
 	}
 };
 
@@ -119,9 +121,9 @@ struct NullIndexProvider
 struct TupleIndexProvider
 {
 	template <typename Container, typename Iterator>
-	NodePtr operator()(const Document& doc, const Container& container, Iterator& iterator)
+	Index operator()(const Document& doc, const Container& container, Iterator& iterator)
 	{
-		return std::get<TupleIndex::Node>(*iterator);
+		return { std::get<TupleIndex::Node>(*iterator), std::distance(cbegin(container), iterator) };
 	}
 };
 
@@ -129,9 +131,9 @@ struct TupleIndexProvider
 struct TreeParentIndexProvider
 {
 	template <typename Container, typename Iterator>
-	NodePtr operator()(const Document& doc, const Container& container, Iterator& iterator)
+	Index operator()(const Document& doc, const Container& container, Iterator& iterator)
 	{
-		return doc.parent(*iterator);
+		return { doc.parent(*iterator), doc.childIndex(*iterator) };
 	}
 };
 
@@ -273,7 +275,7 @@ void copyDiffering(const Document& prev, const Document& cur, DestContainer& pre
 
 std::shared_ptr<MutationInfo> MutationInfo::compare(const Document& prev, const Document& cur) noexcept
 {
-	auto info = std::make_shared<MutationInfo>();
+	auto info = std::make_shared<MutationInfo>(prev, cur);
 
 	// Create two sets that contain all prev/cur nodes and make them comparable and findable by uuid
 	// To limit the amount of processing we need to do, we remove nodes from cur that are exactly the same in prev, and also don't copy those nodes to prev

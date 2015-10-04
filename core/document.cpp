@@ -49,6 +49,13 @@ NodePtr Document::parent(NodePtr node) const noexcept
 	return *parent;
 }
 
+NodePtr Document::child(NodePtr parent, size_t index) const noexcept
+{
+	assert(parent);
+	auto it = iteratorFor(this->nodes(), parent);
+	return *tree_t::child(it, index);
+}
+
 size_t Document::childIndex(NodePtr node) const noexcept
 {
 	assert(node);
@@ -57,6 +64,12 @@ size_t Document::childIndex(NodePtr node) const noexcept
 }
 
 size_t Document::childCount(NodePtr node) const noexcept
+{
+	assert(node);
+	return this->nodes().number_of_children(iteratorFor(this->nodes(), node));
+}
+
+size_t Document::totalChildCount(NodePtr node) const noexcept
 {
 	assert(node);
 	return this->nodes().size(iteratorFor(this->nodes(), node)) - 1; // - 1 because it includes the node itself

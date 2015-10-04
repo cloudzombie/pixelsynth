@@ -1,7 +1,7 @@
 # Source
-file(GLOB_RECURSE src ./*.cpp ./*.h)
-list(REMOVE_ITEM src ${CMAKE_CURRENT_SOURCE_DIR}/./static.cpp)
-list(INSERT src 0 ${CMAKE_CURRENT_SOURCE_DIR}/./static.cpp)
+file(GLOB_RECURSE src RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} *.cpp *.h)
+list(REMOVE_ITEM src static.cpp)
+list(INSERT src 0 static.cpp)
 
 # Git revision
 include(${CMAKE_SOURCE_DIR}/cmake/versioninfo.cmake)
