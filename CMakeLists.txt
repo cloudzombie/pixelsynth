@@ -23,6 +23,7 @@ include_directories(${CMAKE_SOURCE_DIR})
 include_directories(${CMAKE_SOURCE_DIR}/libs/bandit)
 include_directories(${CMAKE_SOURCE_DIR}/libs/cereal/include)
 include_directories(${CMAKE_SOURCE_DIR}/libs/glm)
+include_directories(${CMAKE_SOURCE_DIR}/libs/spdlog/include)
 include_directories(${CMAKE_SOURCE_DIR}/libs/tree)
 include_directories(${CMAKE_SOURCE_DIR}/libs/variant/include)
 
