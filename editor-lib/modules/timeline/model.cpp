@@ -6,95 +6,67 @@
 using Editor::Modules::Timeline::Model;
 using ChangeType = Core::MutationInfo::ChangeType;
 using NodePtr = Core::NodePtr;
+using Uuid = Core::Uuid;
+
+const size_t NodeRole = Qt::UserRole;
+const size_t UuidRole = Qt::UserRole + 1;
 
 Model::Model()
 {
 }
 
-void Model::apply(std::shared_ptr<Core::MutationInfo> mutation)
+void Model::apply(std::shared_ptr<Core::MutationInfo> mutation) noexcept
 {
-	doc_ = &mutation->cur;
-
-	for (auto&& node: mutation->nodes)
+	for (auto&& mut: mutation->nodes)
 	{
-		switch (node.type)
+		switch (mut.type)
 		{
 		case ChangeType::Added:
 		{
-			beginInsertRows(createIndex(0, 0, toId(mutation->cur.parent(node.cur))), node.index, node.index);
-			endInsertRows();
+			QStandardItem* parentNode = findItem(mutation->cur.parent(mut.cur));
+			if (!parentNode) parentNode = invisibleRootItem();
+
+			parentNode->insertRow(mut.index, makeItem(mut.cur));
+
 			break;
 		}
 		case ChangeType::Removed:
 		{
-			beginRemoveRows(createIndex(0, 0, toId(mutation->prev.parent(node.prev))), node.index, node.index);
-			endRemoveRows();
+			auto prevItem = findItem(mut.prev);
+			QStandardItem* prevParentNode = findItem(mutation->prev.parent(mut.prev));
+			if (!prevParentNode) prevParentNode = invisibleRootItem();
+
+			prevParentNode->removeRow(findChildIndex(prevParentNode, prevItem));
 			break;
 		}
-		case ChangeType::Mutated: break;
+		case ChangeType::Mutated:
+		{
+			auto prevItem = findItem(mut.prev);
+			QStandardItem* prevParentNode = findItem(mutation->prev.parent(mut.prev));
+			if (!prevParentNode) prevParentNode = invisibleRootItem();
+
+			QStandardItem* curParentNode = findItem(mutation->cur.parent(mut.cur));
+			if (!curParentNode) curParentNode = invisibleRootItem();
+
+			prevParentNode->removeRow(findChildIndex(prevParentNode, prevItem));
+			curParentNode->insertRow(mut.index, makeItem(mut.cur));
+
+			break;
+		}
 		default: break;
 		}
 	}
 }
 
-NodePtr Model::fromId(quintptr id) const noexcept
+Uuid Model::uuidFromIndex(const QModelIndex& index) const noexcept
 {
-	return ptrIds_[id];
+	auto node = reinterpret_cast<Core::Node*>(itemFromIndex(index)->data(NodeRole).value<void*>());
+	return node->uuid();
 }
 
-quintptr Model::toId(const NodePtr& ptr) const noexcept
+QModelIndex Model::indexFromUuid(const Uuid& nodeUuid) const noexcept
 {
-	for (auto&& kvp: ptrIds_)
-	{
-		if (kvp.second == ptr) return kvp.first;
-	}
-	ptrIds_[++id_] = ptr;
-	return id_;
-}
-
-QModelIndex Model::index(int row, int column, const QModelIndex& parent) const
-{
-	if (row < 0 || column < 0) return QModelIndex();
-	if (row >= rowCount(parent)) return QModelIndex();
-
-	auto parentNode = parent.isValid() ? fromId(parent.internalId()) : *doc_->nodes().begin();
-	return createIndex(row, column, toId(doc_->child(parentNode, row)));
-}
-
-QModelIndex Model::parent(const QModelIndex& child) const
-{
-	if (!child.isValid()) return QModelIndex();
-	auto childNode = fromId(child.internalId());
-	auto parentNode = doc_->parent(childNode);
-	if (parentNode == *doc_->nodes().begin()) return QModelIndex();
-	return createIndex(doc_->childIndex(parentNode), 0, toId(parentNode));
-}
-
-int Model::rowCount(const QModelIndex& parent) const
-{
-	if (parent.column() >= 1) return 0; // invalid column
-
-	auto parentNode = parent.isValid() ? fromId(parent.internalId()) : *doc_->nodes().begin();
-	return doc_->childCount(parentNode);
-}
-
-int Model::columnCount(const QModelIndex& parent) const
-{
-	return 1;
-}
-
-QVariant Model::data(const QModelIndex& index, int role) const
-{
-	if (!index.isValid()) return QVariant();
-
-	auto node = fromId(index.internalId());
-	switch (role)
-	{
-	case Qt::DisplayRole:
-		return prop(node, "$Title")->get<std::string>(0).c_str();
-	default:
-		return QVariant();
-	}
+	return indexFromItem(findItem(nodeUuid));
 }
 
 QVariant Model::headerData(int section, Qt::Orientation orientation, int role) const
@@ -106,8 +78,44 @@ QVariant Model::headerData(int section, Qt::Orientation orientation, int role) c
 	}
 }
 
-Qt::ItemFlags Model::flags(const QModelIndex& index) const
+QStandardItem* Model::makeItem(const Core::NodePtr& node) const noexcept
 {
-	if (index == QModelIndex()) return 0;
-	return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
+	auto item = new QStandardItem();
+	item->setData(QVariant::fromValue<void*>(const_cast<void*>(static_cast<const void*>(node.get()))), NodeRole);
+	item->setData(QVariant::fromValue<Uuid>(node->uuid()), UuidRole);
+	item->setData(Core::prop<std::string>(node, "$Title", 0).c_str(), Qt::DisplayRole);
+	return item;
+}
+
+int Model::findChildIndex(QStandardItem* parent, QStandardItem* item) const noexcept
+{
+	for (int row = 0; row < parent->rowCount();row++)
+	{
+		if (parent->child(row) == item) return row;
+	}
+	return -1;
+}
+
+QStandardItem* Model::findItem(const NodePtr& node) const noexcept
+{
+	auto result = match(
+		index(0, 0),
+		NodeRole,
+		QVariant::fromValue<void*>(const_cast<void*>(static_cast<const void*>(node.get()))),
+		1,
+		Qt::MatchRecursive);
+	if (result.isEmpty()) return nullptr;
+	return itemFromIndex(result.at(0));
+}
+
+QStandardItem* Model::findItem(const Uuid& nodeUuid) const noexcept
+{
+	auto result = match(
+		index(0, 0),
+		UuidRole,
+		QVariant::fromValue<Uuid>(nodeUuid),
+		1,
+		Qt::MatchRecursive);
+	if (result.isEmpty()) return nullptr;
+	return itemFromIndex(result.at(0));
 }

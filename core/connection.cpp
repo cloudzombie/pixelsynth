@@ -11,10 +11,10 @@ using Core::ConnectorMetadataPtr;
 
 enum ConnectionTuple
 {
-	OUTPUT_NODE = 0,
-	OUTPUT,
-	INPUT_NODE,
-	INPUT
+	OUTPUT_NODE_ = 0,
+	OUTPUT_,
+	INPUT_NODE_,
+	INPUT_
 };
 
 Connection::Connection()
@@ -24,10 +24,10 @@ Connection::Connection()
 Connection::Connection(connection_t connection)
 	: impl_(std::make_unique<Impl>())
 {
-	assert(std::get<OUTPUT>(connection));
-	assert(std::get<OUTPUT>(connection)->type() == ConnectorType::Output);
-	assert(std::get<INPUT>(connection));
-	assert(std::get<INPUT>(connection)->type() == ConnectorType::Input);
+	assert(std::get<OUTPUT_>(connection));
+	assert(std::get<OUTPUT_>(connection)->type() == ConnectorType::Output);
+	assert(std::get<INPUT_>(connection));
+	assert(std::get<INPUT_>(connection)->type() == ConnectorType::Input);
 	impl_->connection_ = connection;
 }
 
@@ -51,7 +51,7 @@ const Connection::connection_t& Connection::connection() const noexcept
 	return impl_->connection_;
 }
 
-NodePtr Connection::outputNode() const { return std::get<OUTPUT_NODE>(impl_->connection_); }
-ConnectorMetadataPtr Connection::output() const { return std::get<OUTPUT>(impl_->connection_); }
-NodePtr Connection::inputNode() const { return std::get<INPUT_NODE>(impl_->connection_); }
-ConnectorMetadataPtr Connection::input() const { return std::get<INPUT>(impl_->connection_); }
+NodePtr Connection::outputNode() const { return std::get<OUTPUT_NODE_>(impl_->connection_); }
+ConnectorMetadataPtr Connection::output() const { return std::get<OUTPUT_>(impl_->connection_); }
+NodePtr Connection::inputNode() const { return std::get<INPUT_NODE_>(impl_->connection_); }
+ConnectorMetadataPtr Connection::input() const { return std::get<INPUT_>(impl_->connection_); }

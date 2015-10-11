@@ -1,10 +1,18 @@
 #pragma once
 #include "static.h"
 
-#include <core/node.h>
-#include <core/project.h>
+#include "node.h"
+#include "project.h"
+#include "factory.h"
 
 BEGIN_NAMESPACE(Core)
+
+static std::shared_ptr<Node> makeNode(HashValue type, std::string title)
+{
+	auto builder = Factory::makeNode(type);
+	builder->mutateProperty(hash("$Title"), [&](auto& prop) { prop.set(0, title); });
+	return std::make_shared<Node>(std::move(*builder));
+}
 
 inline PropertyPtr prop(const NodePtr& node, const char* propertyTitle)
 {

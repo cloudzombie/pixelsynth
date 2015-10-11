@@ -4,28 +4,24 @@
 
 BEGIN_NAMESPACE(Editor) BEGIN_NAMESPACE(Modules) BEGIN_NAMESPACE(Timeline)
 
-class Model: public QAbstractItemModel
+class Model: public QStandardItemModel
 {
 public:
 	Model();
 
-	void apply(std::shared_ptr<Core::MutationInfo> mutation);
+	void apply(std::shared_ptr<Core::MutationInfo> mutation) noexcept;
+	
+	Core::Uuid uuidFromIndex(const QModelIndex& index) const noexcept;
+	QModelIndex indexFromUuid(const Core::Uuid& nodeUuid) const noexcept;
 
-	QModelIndex index(int row, int column, const QModelIndex& parent = QModelIndex()) const override;
-	QModelIndex parent(const QModelIndex& child) const override;
-	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
-	int columnCount(const QModelIndex& parent = QModelIndex()) const override;
-	QVariant data(const QModelIndex& index, int role) const override;
 	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
-	Qt::ItemFlags flags(const QModelIndex& index) const override;
 
 private:
-	Core::NodePtr fromId(quintptr id) const noexcept;
-	quintptr toId(const Core::NodePtr& ptr) const noexcept;
+	QStandardItem* makeItem(const Core::NodePtr& node) const noexcept;
+	int findChildIndex(QStandardItem* parent, QStandardItem* item) const noexcept;
 
-	const Core::Document* doc_ {};
-	mutable std::unordered_map<quintptr, Core::NodePtr> ptrIds_ {};
-	mutable quintptr id_ {};
+	QStandardItem* findItem(const Core::NodePtr& node) const noexcept;
+	QStandardItem* findItem(const Core::Uuid& nodeUuid) const noexcept;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline)

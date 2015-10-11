@@ -52,8 +52,14 @@ NodePtr Document::parent(NodePtr node) const noexcept
 NodePtr Document::child(NodePtr parent, size_t index) const noexcept
 {
 	assert(parent);
+	assert(childCount(parent) > index);
 	auto it = iteratorFor(this->nodes(), parent);
 	return *tree_t::child(it, index);
+}
+
+bool Document::exists(NodePtr node) const noexcept
+{
+	return find(cbegin(this->nodes()), cend(this->nodes()), node) != cend(this->nodes());
 }
 
 size_t Document::childIndex(NodePtr node) const noexcept
@@ -183,6 +189,17 @@ void Builder::fixupConnections()
 	}
 
 	impl_->connections_ = fixed;
+}
+
+void Builder::insertBefore(NodePtr before, std::initializer_list<NodePtr> nodes) noexcept
+{
+	assert(before);
+	auto beforePos = iteratorFor(impl_->nodes_, before);
+
+	for (auto&& node : nodes)
+	{
+		impl_->nodes_.insert(beforePos, node);
+	}
 }
 
 void Builder::append(std::initializer_list<NodePtr> nodes) noexcept

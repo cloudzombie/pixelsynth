@@ -19,6 +19,7 @@
 
 #include "stringhash.h"
 #include "uuid.h"
+#include "log.h"
 
 namespace cereal
 {

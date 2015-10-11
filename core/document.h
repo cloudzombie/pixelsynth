@@ -34,6 +34,7 @@ public:
 
 	NodePtr parent(NodePtr node) const noexcept;
 	NodePtr child(NodePtr parent, size_t index) const noexcept;
+	bool exists(NodePtr node) const noexcept;
 	size_t childIndex(NodePtr node) const noexcept;
 	size_t childCount(NodePtr node) const noexcept;
 	size_t totalChildCount(NodePtr node) const noexcept;
@@ -56,6 +57,7 @@ public:
 
 		void mutate(NodePtr node, mutate_fn fn) noexcept;
 
+		void insertBefore(NodePtr before, std::initializer_list<NodePtr> nodes) noexcept;
 		void append(std::initializer_list<NodePtr> nodes) noexcept;
 		void append(NodePtr parent, std::initializer_list<NodePtr> nodes) noexcept;
 

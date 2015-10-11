@@ -1,13 +1,19 @@
 #pragma once
 #include "static.h"
 
-class MainWindow: public QObject
+BEGIN_NAMESPACE(Editor)
+
+class MainWindow: public QMainWindow
 {
 	Q_OBJECT
 
 public:
 	MainWindow();
 
-signals:
-	void bla();
+private:
+	QWidget* timeline_;
+	QDockWidget* buttonDock_;
+	QPushButton* button_;
 };
+
+END_NAMESPACE(Editor)

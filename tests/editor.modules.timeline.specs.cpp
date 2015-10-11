@@ -31,7 +31,6 @@ go_bandit([]() {
 		it("has added nodes", [&]()
 		{
 			p->applyMutationsTo(0);
-			qtTestModel();
 			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("a"));
 			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
 			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
@@ -40,7 +39,6 @@ go_bandit([]() {
 		it("has removed nodes", [&]()
 		{
 			p->applyMutationsTo(1);
-			qtTestModel();
 			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("a"));
 			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
 		});
@@ -48,7 +46,6 @@ go_bandit([]() {
 		it("has added nodes after undo", [&]()
 		{
 			p->applyMutationsTo(2);
-			qtTestModel();
 			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("a"));
 			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
 			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
@@ -57,7 +54,6 @@ go_bandit([]() {
 		it("can reparent from root to lower", [&]()
 		{
 			p->applyMutationsTo(8);
-			qtTestModel();
 			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
 			AssertThat(model->data(model->index(0, 0, model->index(0, 0)), Qt::DisplayRole).toString().toStdString(), Equals("a"));
 			AssertThat(model->data(model->index(1, 0, model->index(0, 0)), Qt::DisplayRole).toString().toStdString(), Equals("b"));
@@ -66,7 +62,6 @@ go_bandit([]() {
 		it("can reparent from lower to root", [&]()
 		{
 			p->applyMutationsTo(9);
-			qtTestModel();
 			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("a"));
 			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
 			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
