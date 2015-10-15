@@ -177,3 +177,8 @@ void Builder::set(Frame frame, PropertyValue value) noexcept
 {
 	impl_->keys_[frame] = value;
 }
+
+void Builder::setAnimated(bool animated) noexcept
+{
+	impl_->animated_ = animated;
+}

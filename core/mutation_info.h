@@ -77,7 +77,7 @@ struct MutationInfo
 				break;
 			}
 
-			out << "Change(" << type << ": " << *c.prev << ", " << *c.cur << ", " << *c.parent << ")";
+			out << "Change(" << type << ": " << *c.prev << ", " << *c.cur << ", " << *c.parent << ", index: " << c.index << ")";
 			return out;
 		}
 		friend std::ostream& operator<<(std::ostream& out, Change<T>* c) { out << *c; return out; }

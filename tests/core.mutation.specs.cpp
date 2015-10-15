@@ -21,12 +21,12 @@ go_bandit([]() {
 			p = std::make_unique<MutationProject>();
 			p->setMutationCallback([&mutations](auto mutationInfo) { mutations.emplace_back(mutationInfo); });
 
-			p->applyMutationsTo(9);
+			p->applyMutationsTo(12);
 		});
 
 		it("should have emitted mutations", [&]()
 		{
-			AssertThat(mutations.size(), Equals(10));
+			AssertThat(mutations.size(), !Equals(0));
 		});
 
 		it("should emit added nodes", [&]()
@@ -115,6 +115,32 @@ go_bandit([]() {
 			AssertThat(mutation->nodes.size(), Equals(2));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a8, p->a8, ChangeType::Mutated, p->root(), 0)));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b8, p->b8, ChangeType::Mutated, p->root(), 1)));
+		});
+
+		it("should emit setting a property to animated", [&]()
+		{
+			auto mutation = mutations.at(10);
+			AssertThat(mutation->nodes.size(), Equals(1));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a9, p->a10, ChangeType::Mutated, p->root(), 0)));
+			AssertThat(mutation->properties.size(), Equals(1));
+			AssertThat(mutation->properties, Contains(Change<PropertyPtr>(prop(*p->a9, "double"), prop(*p->a10, "double"), ChangeType::Mutated, p->a10, 2)));
+		});
+
+		it("should emit setting another property to animated", [&]()
+		{
+			auto mutation = mutations.at(11);
+			AssertThat(mutation->nodes.size(), Equals(1));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a10, p->a11, ChangeType::Mutated, p->root(), 0)));
+			AssertThat(mutation->properties.size(), Equals(1));
+			AssertThat(mutation->properties, Contains(Change<PropertyPtr>(prop(*p->a10, "int"), prop(*p->a11, "int"), ChangeType::Mutated, p->a11, 1)));
+		});
+	
+		it("should emit inserting nodes", [&]()
+		{
+			auto mutation = mutations.at(12);
+			AssertThat(mutation->nodes.size(), Equals(1));
+			auto m = begin(mutation->nodes);
+			AssertThat(*m++, Equals(Change<NodePtr>(nullptr, p->between_ab12, ChangeType::Added, p->root(), 1)));
 		});
 	});
 });

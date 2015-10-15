@@ -17,6 +17,7 @@ private:
 		HashValue propertyType_;
 		PropertyMetadataPtr metadata_;
 		keys_t keys_;
+		bool animated_ {};
 	};
 
 public:
@@ -43,6 +44,8 @@ public:
 		Builder& operator=(Builder&& rhs);
 
 		void set(Frame frame, PropertyValue value) noexcept;
+
+		void setAnimated(bool animated) noexcept;
 
 	private:
 		friend class Property;
@@ -81,6 +84,8 @@ private:
 			archive(kvp.first);
 			archive(kvp.second);
 		}
+
+		archive(impl_->animated_);
 	}
 
 	template<class Archive>
@@ -100,6 +105,8 @@ private:
 			archive(value);
 			impl_->keys_[frame] = value;
 		}
+	
+		archive(impl_->animated_);
 	}
 
 	PropertyValue getPropertyValue(Frame frame) const noexcept;

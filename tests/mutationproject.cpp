@@ -99,9 +99,44 @@ void MutationProject::applyMutationsTo(size_t maxMutation)
 		case 9:
 			// 9 = undo reparent
 			this->undo();
+			a9 = findNode(*this, "a");
 			break;
 
 		case 10:
+			// 10 = set property double to animated
+			this->mutate([&](Document::Builder& mut)
+			{
+				mut.mutate(a9, [&](Node::Builder& node)
+				{
+					node.mutateProperty(hash("double"), [&](Property::Builder& prop) { prop.setAnimated(true); });
+				});
+			});
+			a10 = findNode(*this, "a");
+			break;
+
+		case 11:
+			// 11 = set property int to animated
+			this->mutate([&](Document::Builder& mut)
+			{
+				mut.mutate(a10, [&](Node::Builder& node)
+				{
+					node.mutateProperty(hash("int"), [&](Property::Builder& prop) { prop.setAnimated(true); });
+				});
+			});
+			a11 = findNode(*this, "a");
+			break;
+
+		case 12:
+			// 12 = insert new node between_ab
+			this->mutate([&](auto& mut)
+			{
+				auto node = makeNode(hash("TestNode"), "between_ab");
+				mut.insertBefore(b0, { node });
+			});
+			between_ab12 = findNode(*this, "between_ab");
+			break;
+
+		case 13:
 			throw new std::logic_error("No more migrations");
 		}
 	}
