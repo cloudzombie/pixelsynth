@@ -60,6 +60,27 @@ struct MutationInfo
 		{
 			return !(lhs < rhs);
 		}
+	
+		friend std::ostream& operator<<(std::ostream& out, const Change<T>& c)
+		{
+			std::string type;
+			switch (c.type)
+			{
+			case ChangeType::Added:
+				type = "Added";
+				break;
+			case ChangeType::Removed:
+				type = "Removed";
+				break;
+			case ChangeType::Mutated:
+				type = "Mutated";
+				break;
+			}
+
+			out << "Change(" << type << ": " << *c.prev << ", " << *c.cur << ", " << *c.parent << ")";
+			return out;
+		}
+		friend std::ostream& operator<<(std::ostream& out, Change<T>* c) { out << *c; return out; }
 	};
 
 	template <typename T>

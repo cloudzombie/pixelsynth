@@ -25,7 +25,7 @@ go_bandit([]() {
 				auto node_a = findNode(*p, "a");
 				auto node_b = findNode(*p, "b");
 				auto node_c = findNode(*p, "c");
-				mut.connect(std::make_shared<Connection>(make_tuple(node_a, connector(node_a, "Out"), node_b, connector(node_b, "In"))));
+				mut.connect(std::make_shared<Connection>(make_tuple(node_a, connector(*node_a, "Out"), node_b, connector(*node_b, "In"))));
 				TestNode::addKeyframes(mut, node_a);
 
 				mut.mutate(node_c, [&](Node::Builder& node)
@@ -60,10 +60,10 @@ go_bandit([]() {
 
 			AssertThat(p2->current().connections()[0]->outputNode() == node_a, Equals(true));
 			AssertThat(p2->current().connections()[0]->inputNode() == node_b, Equals(true));
-			AssertThat(p2->current().connections()[0]->output() == connector(node_a, "Out"), Equals(true));
-			AssertThat(p2->current().connections()[0]->input() == connector(node_b, "In"), Equals(true));
+			AssertThat(p2->current().connections()[0]->output() == connector(*node_a, "Out"), Equals(true));
+			AssertThat(p2->current().connections()[0]->input() == connector(*node_b, "In"), Equals(true));
 
-			AssertThat(connector(node_c, "Test") == nullptr, Equals(false));
+			AssertThat(connector(*node_c, "Test") == nullptr, Equals(false));
 
 			TestNode::assertKeyframes(node_a);
 		});

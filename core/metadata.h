@@ -42,6 +42,9 @@ public:
 		: data_(std::move(rhs.data_))
 	{}
 
+	friend std::ostream& operator<<(std::ostream& out, const PropertyMetadata& n);
+	friend std::ostream& operator<<(std::ostream& out, PropertyMetadata* n) { out << *n; return out; }
+
 private:
 	const Data data_;
 };
@@ -84,6 +87,9 @@ public:
 	ConnectorMetadata(Builder&& rhs)
 		: data_(std::move(rhs.data_))
 	{}
+
+	friend std::ostream& operator<<(std::ostream& out, const ConnectorMetadata& n);
+	friend std::ostream& operator<<(std::ostream& out, ConnectorMetadata* n) { out << *n; return out; }
 
 private:
 	friend class cereal::access;

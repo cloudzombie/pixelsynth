@@ -83,7 +83,7 @@ QStandardItem* Model::makeItem(const Core::NodePtr& node) const noexcept
 	auto item = new QStandardItem();
 	item->setData(QVariant::fromValue<void*>(const_cast<void*>(static_cast<const void*>(node.get()))), NodeRole);
 	item->setData(QVariant::fromValue<Uuid>(node->uuid()), UuidRole);
-	item->setData(Core::prop<std::string>(node, "$Title", 0).c_str(), Qt::DisplayRole);
+	item->setData(Core::prop<std::string>(*node, "$Title", 0).c_str(), Qt::DisplayRole);
 	return item;
 }
 

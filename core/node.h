@@ -68,6 +68,9 @@ public:
 	Node(Builder&& rhs);
 	Node& operator=(Builder&& rhs);
 
+	friend std::ostream& operator<<(std::ostream& out, const Node& n);
+	friend std::ostream& operator<<(std::ostream& out, Node* n) { out << *n; return out; }
+
 private:
 	friend class cereal::access;
 	template<class Archive>

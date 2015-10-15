@@ -71,7 +71,7 @@ void MutationProject::applyMutationsTo(size_t maxMutation)
 			{
 				auto node_a = findNode(*this, "a");
 				auto node_b = findNode(*this, "b");
-				mut.connect(std::make_shared<Connection>(make_tuple(node_a, connector(node_a, "Out"), node_b, connector(node_b, "In"))));
+				mut.connect(std::make_shared<Connection>(make_tuple(node_a, connector(*node_a, "Out"), node_b, connector(*node_b, "In"))));
 			});
 			a6 = findNode(*this, "a");
 			b6 = findNode(*this, "b");

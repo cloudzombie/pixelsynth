@@ -62,6 +62,9 @@ public:
 	bool samePropertyHash(const PropertyPtr other) const noexcept;
 	bool samePropertyHash(const HashValue otherNodeType, const HashValue otherPropertyType) const noexcept;
 
+	friend std::ostream& operator<<(std::ostream& out, const Property& p);
+	friend std::ostream& operator<<(std::ostream& out, Property* p) { out << *p; return out; }
+
 private:
 	friend class cereal::access;
 	friend struct property_eq_hash;

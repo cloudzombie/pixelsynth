@@ -138,11 +138,11 @@ go_bandit([]() {
 					node.addConnector(ConnectorMetadata::Builder("Test", ConnectorType::Output));
 				});
 			});
-			AssertThat(connector(findNode(*p, "a"), "Test") == nullptr, Equals(false));
+			AssertThat(connector(*findNode(*p, "a"), "Test") == nullptr, Equals(false));
 			p->undo();
-			AssertThat(connector(findNode(*p, "a"), "Test") == nullptr, Equals(true));
+			AssertThat(connector(*findNode(*p, "a"), "Test") == nullptr, Equals(true));
 			p->redo();
-			AssertThat(connector(findNode(*p, "a"), "Test") == nullptr, Equals(false));
+			AssertThat(connector(*findNode(*p, "a"), "Test") == nullptr, Equals(false));
 		});
 	});
 
@@ -162,7 +162,7 @@ go_bandit([]() {
 			{
 				auto node_a = findNode(*p, "a");
 				auto node_b = findNode(*p, "b");
-				mut.connect(std::make_shared<Connection>(make_tuple(node_a, connector(node_a, "Out"), node_b, connector(node_b, "In"))));
+				mut.connect(std::make_shared<Connection>(make_tuple(node_a, connector(*node_a, "Out"), node_b, connector(*node_b, "In"))));
 			});
 		});
 
