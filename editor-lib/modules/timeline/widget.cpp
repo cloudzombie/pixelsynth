@@ -14,35 +14,15 @@ Widget::Widget(QWidget* parent)
 {
 	p.setMutationCallback([&](auto mutationInfo)
 	{
-		auto selection = selectedNodes();
-		model_->apply(mutationInfo);
-		setSelection(selection);
+		auto newSelection = model_->apply(mutationInfo, tree_->selectionModel()->selectedIndexes());
+		tree_->selectionModel()->clear();
+		for (auto&& item: newSelection) tree_->selectionModel()->select(item, QItemSelectionModel::Select);
 	});
 
 	tree_->setModel(model_.get());
 	tree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
 	mutate();
-}
-
-Widget::selection_t Widget::selectedNodes() const noexcept
-{
-	selection_t s;
-
-	for (auto&& index: tree_->selectionModel()->selectedIndexes())
-	{
-		s.push_back(model_->uuidFromIndex(index));
-	}
-
-	return s;
-}
-
-void Widget::setSelection(selection_t selection) noexcept
-{
-	for (auto&& node: selection)
-	{
-		tree_->selectionModel()->select(model_->indexFromUuid(node), QItemSelectionModel::SelectCurrent);
-	}
 }
 
 void Widget::mutate()

@@ -13,6 +13,7 @@ go_bandit([]() {
 	{
 		std::unique_ptr<MutationProject> p;
 		std::unique_ptr<Editor::Modules::Timeline::Model> model;
+		QModelIndexList oldSelection, newSelection;
 
 		NodePtr a0, b0, c0;
 
@@ -20,7 +21,9 @@ go_bandit([]() {
 		{
 			p = std::make_unique<MutationProject>();
 			model = std::make_unique<Editor::Modules::Timeline::Model>();
-			p->setMutationCallback([&](auto mutationInfo) { model->apply(mutationInfo); });
+			oldSelection.clear();
+			newSelection.clear();
+			p->setMutationCallback([&](auto mutationInfo) { newSelection = model->apply(mutationInfo, oldSelection); oldSelection = newSelection; });
 		});
 
 		auto qtTestModel = [&]()
@@ -53,18 +56,38 @@ go_bandit([]() {
 
 		it("can reparent from root to lower", [&]()
 		{
-			p->applyMutationsTo(8);
+			// Select a and c
+			p->applyMutationsTo(7);
+			oldSelection.append(model->index(0, 0));
+			oldSelection.append(model->index(2, 0));
+
+			p->applyMutation(8);
 			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
 			AssertThat(model->data(model->index(0, 0, model->index(0, 0)), Qt::DisplayRole).toString().toStdString(), Equals("a"));
 			AssertThat(model->data(model->index(1, 0, model->index(0, 0)), Qt::DisplayRole).toString().toStdString(), Equals("b"));
+
+			AssertThat(newSelection.size(), Equals(2));
+			auto a = newSelection.at(0);
+			auto b = newSelection.at(1);
+			AssertThat(model->data(newSelection.at(0), Qt::DisplayRole).toString().toStdString(), Equals("a") || Equals("c"));
+			AssertThat(model->data(newSelection.at(1), Qt::DisplayRole).toString().toStdString(), Equals("a") || Equals("c"));
 		});
 
 		it("can reparent from lower to root", [&]()
 		{
-			p->applyMutationsTo(9);
+			// Select a and c
+			p->applyMutationsTo(7);
+			oldSelection.append(model->index(0, 0));
+			oldSelection.append(model->index(2, 0));
+
+			p->applyMutationsFromTo(8, 9);
 			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("a"));
 			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
 			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
+
+			AssertThat(newSelection.size(), Equals(2));
+			AssertThat(model->data(newSelection.at(0), Qt::DisplayRole).toString().toStdString(), Equals("a") || Equals("c"));
+			AssertThat(model->data(newSelection.at(1), Qt::DisplayRole).toString().toStdString(), Equals("a") || Equals("c"));
 		});
 	
 		it("has inserted nodes", [&]()
@@ -74,6 +97,21 @@ go_bandit([]() {
 			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("between_ab"));
 			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
 			AssertThat(model->data(model->index(3, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
+		});
+
+		it("has renamed a node", [&]()
+		{
+			// Select a and c
+			p->applyMutationsTo(12);
+			oldSelection.append(model->index(0, 0));
+			oldSelection.append(model->index(3, 0));
+
+			p->applyMutationsTo(13);
+			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("a!"));
+	
+			AssertThat(newSelection.size(), Equals(2));
+			AssertThat(model->data(newSelection.at(0), Qt::DisplayRole).toString().toStdString(), Equals("a!") || Equals("c"));
+			AssertThat(model->data(newSelection.at(1), Qt::DisplayRole).toString().toStdString(), Equals("a!") || Equals("c"));
 		});
 	});
 });

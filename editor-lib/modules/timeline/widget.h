@@ -12,13 +12,8 @@ class Widget: public QWidget
 	Q_OBJECT
 
 public:
-	using selection_t = std::deque<Core::Uuid>;
-
 	Widget(QWidget* parent);
 	void mutate();
-
-	selection_t selectedNodes() const noexcept;
-	void setSelection(selection_t selection) noexcept;
 
 private:
 	QTreeView* tree_;

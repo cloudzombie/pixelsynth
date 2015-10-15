@@ -9,19 +9,17 @@ class Model: public QStandardItemModel
 public:
 	Model();
 
-	void apply(std::shared_ptr<Core::MutationInfo> mutation) noexcept;
-	
-	Core::Uuid uuidFromIndex(const QModelIndex& index) const noexcept;
-	QModelIndex indexFromUuid(const Core::Uuid& nodeUuid) const noexcept;
+	QModelIndexList apply(std::shared_ptr<Core::MutationInfo> mutation, const QModelIndexList& oldSelection) noexcept;
 
 	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
 private:
 	QStandardItem* makeItem(const Core::NodePtr& node) const noexcept;
 	int findChildIndex(QStandardItem* parent, QStandardItem* item) const noexcept;
-
-	QStandardItem* findItem(const Core::NodePtr& node) const noexcept;
-	QStandardItem* findItem(const Core::Uuid& nodeUuid) const noexcept;
+	
+	QStandardItem* findItem(const Core::Node& node) const noexcept;
+	Core::Node* nodeFromIndex(const QModelIndex& index) const noexcept;
+	QModelIndex indexFromNode(const Core::Node& node) const noexcept;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline)
