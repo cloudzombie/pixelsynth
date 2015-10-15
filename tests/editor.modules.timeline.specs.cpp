@@ -66,5 +66,14 @@ go_bandit([]() {
 			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
 			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
 		});
+	
+		it("has inserted nodes", [&]()
+		{
+			p->applyMutationsTo(12);
+			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("a"));
+			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("between_ab"));
+			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
+			AssertThat(model->data(model->index(3, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
+		});
 	});
 });
