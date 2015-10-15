@@ -11,18 +11,7 @@ public:
 	using properties_t = std::vector<std::shared_ptr<const Property>>;
 
 private:
-	struct Impl
-	{
-		Uuid uuid_;
-		HashValue nodeType_;
-		properties_t properties_;
-		ConnectorMetadataCollection* sharedConnectorMetadata_;
-		ConnectorMetadataCollection localConnectorMetadata_;
-
-		// cache
-		ConnectorMetadataCollection combinedConnectorMetadata_;
-		size_t combinedHash_;
-	};
+	struct Impl;
 
 public:
     Node(HashValue nodeType);
@@ -73,33 +62,8 @@ public:
 
 private:
 	friend class cereal::access;
-	template<class Archive>
-	void save(Archive& archive) const
-	{
-		archive(impl_->uuid_);
-		archive(impl_->nodeType_);
-		archive(impl_->properties_);
-		archive(impl_->localConnectorMetadata_);
-	}
-
-	template<class Archive>
-	void load(Archive& archive)
-	{
-		archive(impl_->uuid_);
-
-		HashValue nodeType;
-		archive(nodeType);
-		setNodeType(nodeType);
-
-		std::vector<MutablePropertyPtr> props;
-		archive(props);
-		impl_->properties_.clear();
-		for (auto&& p : props) impl_->properties_.emplace_back(p);
-	
-		std::vector<MutableConnectorMetadataPtr> localConnectors;
-		archive(localConnectors);
-		for (auto& c : localConnectors) impl_->localConnectorMetadata_.emplace_back(c);
-	}
+	template<class Archive> void save(Archive& archive) const;
+	template<class Archive>	void load(Archive& archive);
 
 	Node();
 

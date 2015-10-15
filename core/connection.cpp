@@ -55,3 +55,33 @@ NodePtr Connection::outputNode() const { return std::get<OUTPUT_NODE_>(impl_->co
 ConnectorMetadataPtr Connection::output() const { return std::get<OUTPUT_>(impl_->connection_); }
 NodePtr Connection::inputNode() const { return std::get<INPUT_NODE_>(impl_->connection_); }
 ConnectorMetadataPtr Connection::input() const { return std::get<INPUT_>(impl_->connection_); }
+
+///
+
+template<class Archive>
+void Connection::save(Archive& archive) const
+{
+	archive(impl_->connection_);
+}
+
+template<class Archive>
+void Connection::load(Archive& archive)
+{
+	mutable_connection_t loaded;
+	archive(loaded);
+
+	NodePtr outputNode;
+	ConnectorMetadataPtr output;
+	NodePtr inputNode;
+	ConnectorMetadataPtr input;
+	tie(outputNode, output, inputNode, input) = loaded;
+
+	// Replace non-local connectors with the one from the global metadata repository
+	if (!output->isLocal()) output = *find_if(begin(outputNode->connectorMetadata()), end(outputNode->connectorMetadata()), [output](auto& c) { return c->hash() == output->hash(); });
+	if (!input->isLocal()) input = *find_if(begin(inputNode->connectorMetadata()), end(inputNode->connectorMetadata()), [input](auto& c) { return c->hash() == input->hash(); });
+
+	impl_->connection_ = make_tuple(outputNode, output, inputNode, input);
+}
+
+template void Connection::save<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive) const;
+template void Connection::load<cereal::XMLInputArchive>(cereal::XMLInputArchive& archive);

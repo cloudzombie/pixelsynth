@@ -13,6 +13,19 @@ using Core::ConnectorMetadataCollection;
 using Core::ConnectorMetadataPtr;
 using Builder = Node::Builder;
 
+struct Node::Impl
+{
+	Uuid uuid_;
+	HashValue nodeType_;
+	properties_t properties_;
+	ConnectorMetadataCollection* sharedConnectorMetadata_;
+	ConnectorMetadataCollection localConnectorMetadata_;
+
+	// cache
+	ConnectorMetadataCollection combinedConnectorMetadata_;
+	size_t combinedHash_;
+};
+
 Node::Node()
 	: impl_(std::make_unique<Impl>())
 {}
@@ -134,3 +147,36 @@ void Builder::addConnector(ConnectorMetadata::Builder&& connector) noexcept
 {
 	impl_->localConnectorMetadata_.emplace_back(connector.withLocal(true).build());
 }
+
+///
+
+template<class Archive>
+void Node::save(Archive& archive) const
+{
+	archive(impl_->uuid_);
+	archive(impl_->nodeType_);
+	archive(impl_->properties_);
+	archive(impl_->localConnectorMetadata_);
+}
+
+template<class Archive>
+void Node::load(Archive& archive)
+{
+	archive(impl_->uuid_);
+
+	HashValue nodeType;
+	archive(nodeType);
+	setNodeType(nodeType);
+
+	std::vector<MutablePropertyPtr> props;
+	archive(props);
+	impl_->properties_.clear();
+	for (auto&& p : props) impl_->properties_.emplace_back(p);
+
+	std::vector<MutableConnectorMetadataPtr> localConnectors;
+	archive(localConnectors);
+	for (auto& c : localConnectors) impl_->localConnectorMetadata_.emplace_back(c);
+}
+
+template void Node::save<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive) const;
+template void Node::load<cereal::XMLInputArchive>(cereal::XMLInputArchive& archive);

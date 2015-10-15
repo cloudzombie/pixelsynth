@@ -10,6 +10,12 @@ using Core::HashValue;
 using Core::ConnectorMetadata;
 using Builder = Document::Builder;
 
+struct Document::Impl
+{
+	tree_t nodes_;
+	connections_t connections_;
+};
+
 Document::Document()
 	: impl_(std::make_unique<Impl>())
 {
@@ -248,3 +254,48 @@ void Builder::connect(ConnectionPtr connection)
 {
 	impl_->connections_.emplace_back(connection);
 }
+
+///
+
+template<class Archive>
+void Document::save(Archive& archive) const
+{
+	auto it = impl_->nodes_.begin();
+
+	// root
+	archive(*it++);
+
+	std::map<NodePtr, std::vector<NodePtr>> nodes;
+	std::for_each(it, end(impl_->nodes_), [&](auto& node) { nodes[this->parent(node)].emplace_back(node); });
+	archive(nodes);
+	archive(impl_->connections_);
+}
+
+template<class Archive>
+void Document::load(Archive& archive)
+{
+	MutableNodePtr root;
+	archive(root);
+	impl_->nodes_.set_head(root);
+
+	std::map<MutableNodePtr, std::vector<MutableNodePtr>> nodes;
+	archive(nodes);
+
+	for (auto&& kvp : nodes)
+	{
+		auto&& parent = kvp.first;
+		for (auto&& child : kvp.second)
+		{
+			auto parentPos = iteratorFor(impl_->nodes_, parent);
+			impl_->nodes_.append_child(parentPos, child);
+		}
+	}
+
+	std::vector<MutableConnectionPtr> connections;
+	archive(connections);
+	for (auto&& con : connections) impl_->connections_.emplace_back(con);
+}
+
+template void Document::save<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive) const;
+template void Document::load<cereal::XMLInputArchive>(cereal::XMLInputArchive& archive);
+

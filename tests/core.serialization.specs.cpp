@@ -1,5 +1,4 @@
 #include "static.h"
-#include <core/serializer.h>
 
 using namespace bandit;
 #include "test-utils.h"

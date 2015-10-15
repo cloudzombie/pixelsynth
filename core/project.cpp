@@ -56,3 +56,27 @@ void Project::setMutationCallback(mutation_callback_fn fn) noexcept
 {
 	mutationCallback_ = fn;
 }
+
+///
+
+template<class Archive>
+void Project::save(Archive& archive) const
+{
+	archive(root_);
+	archive(current());
+}
+
+template<class Archive>
+void Project::load(Archive& archive)
+{
+	MutableNodePtr root;
+	archive(root);
+	root_ = root;
+
+	Document d;
+	archive(d);
+	history_ = { d };
+}
+
+template void Project::save<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive) const;
+template void Project::load<cereal::XMLInputArchive>(cereal::XMLInputArchive& archive);

@@ -76,6 +76,9 @@ namespace Core
 
 		Uuid() = default;
 		explicit Uuid(uint8_t* bytes);
+	
+		friend class cereal::access;
+		template<class Archive> void serialize(Archive& archive);
 	};
 
 	Uuid uuid4(); // UUID v4, pros: anonymous, fast; con: uuids "can clash"

@@ -11,6 +11,15 @@ using Core::PropertyPtr;
 using Core::PropertyValue;
 using Builder = Property::Builder;
 
+struct Property::Impl
+{
+	HashValue nodeType_;
+	HashValue propertyType_;
+	PropertyMetadataPtr metadata_;
+	keys_t keys_;
+	bool animated_ {};
+};
+
 Property::Property()
 	: impl_(std::make_unique<Impl>())
 {}
@@ -123,6 +132,9 @@ bool Property::samePropertyHash(const HashValue otherNodeType, const HashValue o
 	return impl_->nodeType_ == otherNodeType && impl_->propertyType_ == otherPropertyType;
 }
 
+HashValue Property::nodeType() const noexcept { return impl_->nodeType_; }
+HashValue Property::propertyType() const noexcept { return impl_->propertyType_; }
+
 void Property::setMetadata(HashValue nodeType, HashValue propertyType) noexcept
 {
 	impl_->nodeType_ = nodeType;
@@ -182,3 +194,83 @@ void Builder::setAnimated(bool animated) noexcept
 {
 	impl_->animated_ = animated;
 }
+
+///
+
+namespace cereal
+{
+	template<class Archive>
+	struct PropertyValueArchiver
+	{
+		explicit PropertyValueArchiver(Archive& archive)
+			: archive(archive)
+		{}
+
+		template <typename T>
+		void operator()(T& t)
+		{
+			archive(t);
+		}
+
+		Archive& archive;
+	};
+
+	template<class Archive>
+	void serialize(Archive& archive, PropertyValue& p)
+	{
+		PropertyValueArchiver<Archive> fun(archive);
+		eggs::variants::apply(fun, p);
+	}
+
+	template <class Archive>
+	void serialize(Archive& ar, glm::vec2& vec2)
+	{
+		ar(vec2.x, vec2.y);
+	}
+
+	template <class Archive>
+	void serialize(Archive& ar, glm::vec3& vec3)
+	{
+		ar(vec3.x, vec3.y, vec3.z);
+	}
+}
+
+template<class Archive>
+void Property::save(Archive& archive) const
+{
+	archive(impl_->nodeType_);
+	archive(impl_->propertyType_);
+
+	archive(impl_->keys_.size());
+	for (auto&& kvp : impl_->keys_)
+	{
+		archive(kvp.first);
+		archive(kvp.second);
+	}
+
+	archive(impl_->animated_);
+}
+
+template<class Archive>
+void Property::load(Archive& archive)
+{
+	archive(impl_->nodeType_);
+	archive(impl_->propertyType_);
+	setMetadata(impl_->nodeType_, impl_->propertyType_);
+
+	size_t size;
+	archive(size);
+	for (size_t t = 0; t < size; t++)
+	{
+		Frame frame;
+		PropertyValue value = defaultValue();
+		archive(frame);
+		archive(value);
+		impl_->keys_[frame] = value;
+	}
+
+	archive(impl_->animated_);
+}
+
+template void Property::save<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive) const;
+template void Property::load<cereal::XMLInputArchive>(cereal::XMLInputArchive& archive);

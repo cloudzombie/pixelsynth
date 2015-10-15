@@ -142,4 +142,14 @@ namespace Core {
 		return u;
 	}
 
+	template <class Archive>
+	void Uuid::serialize(Archive& ar)
+	{
+		ar(ab);
+		ar(cd);
+	}
+
+	template void Uuid::serialize<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive);
+	template void Uuid::serialize<cereal::XMLInputArchive>(cereal::XMLInputArchive& archive);
+
 } // ::Core

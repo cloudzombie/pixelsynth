@@ -11,14 +11,7 @@ public:
 	using keys_t = std::map<Frame, PropertyValue>;
 
 private:
-	struct Impl
-	{
-		HashValue nodeType_;
-		HashValue propertyType_;
-		PropertyMetadataPtr metadata_;
-		keys_t keys_;
-		bool animated_ {};
-	};
+	struct Impl;
 
 public:
 	Property(HashValue nodeType, HashValue propertyType);
@@ -64,50 +57,18 @@ public:
 	const PropertyMetadata& metadata() const noexcept;
 	bool samePropertyHash(const PropertyPtr other) const noexcept;
 	bool samePropertyHash(const HashValue otherNodeType, const HashValue otherPropertyType) const noexcept;
+	HashValue nodeType() const noexcept;
+	HashValue propertyType() const noexcept;
 
 	friend std::ostream& operator<<(std::ostream& out, const Property& p);
 	friend std::ostream& operator<<(std::ostream& out, Property* p) { out << *p; return out; }
 
 private:
 	friend class cereal::access;
+	template<class Archive> void save(Archive& archive) const;
+	template<class Archive>	void load(Archive& archive);
+
 	friend struct property_eq_hash;
-
-	template<class Archive>
-	void save(Archive& archive) const
-	{
-		archive(impl_->nodeType_);
-		archive(impl_->propertyType_);
-
-		archive(impl_->keys_.size());
-		for (auto&& kvp : impl_->keys_)
-		{
-			archive(kvp.first);
-			archive(kvp.second);
-		}
-
-		archive(impl_->animated_);
-	}
-
-	template<class Archive>
-	void load(Archive& archive)
-	{
-		archive(impl_->nodeType_);
-		archive(impl_->propertyType_);
-		setMetadata(impl_->nodeType_, impl_->propertyType_);
-
-		size_t size;
-		archive(size);
-		for (size_t t = 0; t < size;t++)
-		{
-			Frame frame;
-			PropertyValue value = defaultValue();
-			archive(frame);
-			archive(value);
-			impl_->keys_[frame] = value;
-		}
-	
-		archive(impl_->animated_);
-	}
 
 	PropertyValue getPropertyValue(Frame frame) const noexcept;
 	void setMetadata(HashValue nodeType, HashValue propertyType) noexcept;
@@ -120,7 +81,7 @@ private:
 struct property_eq_hash
 {
 	explicit property_eq_hash(HashValue nodeType, HashValue propertyType): nodeType_(nodeType), propertyType_(propertyType) { }
-	explicit property_eq_hash(PropertyPtr other): nodeType_(other->impl_->nodeType_), propertyType_(other->impl_->propertyType_) { }
+	explicit property_eq_hash(PropertyPtr other): nodeType_(other->nodeType()), propertyType_(other->propertyType()) { }
 	bool operator()(PropertyPtr c1) const { return c1->samePropertyHash(nodeType_, propertyType_); }
 private:
 	HashValue nodeType_;
