@@ -251,8 +251,8 @@ void Builder::reparent(NodePtr parent, std::initializer_list<NodePtr> nodes) noe
 
 	for (auto&& node: nodes)
 	{
-		impl_->nodes_.erase(iteratorFor(impl_->nodes_, *node));
-		impl_->nodes_.append_child(parentPos, node);
+		auto it = iteratorFor(impl_->nodes_, *node);
+		impl_->nodes_.reparent(parentPos, it, impl_->nodes_.next_sibling(it));
 	}
 }
 

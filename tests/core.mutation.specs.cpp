@@ -169,9 +169,9 @@ go_bandit([]() {
 			AssertThat(mutation->nodes.size(), Equals(1));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[8], p->b[17], ChangeType::Mutated, p->root(), p->a[17], 1, 0)));
 
-			/*mutation = mutations.at(19);
+			mutation = mutations.at(19);
 			AssertThat(mutation->nodes.size(), Equals(1));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a[17], p->a[18], ChangeType::Mutated, p->root(), p->c[17], 0, 0)));*/
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a[17], p->a[18], ChangeType::Mutated, p->root(), p->c[17], 0, 0)));
 		});
 	});
 });
