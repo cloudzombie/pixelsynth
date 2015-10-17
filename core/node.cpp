@@ -11,6 +11,7 @@ using Core::Metadata;
 using Core::ConnectorMetadata;
 using Core::ConnectorMetadataCollection;
 using Core::ConnectorMetadataPtr;
+using Core::PropertyMetadata;
 using Builder = Node::Builder;
 
 struct Node::Impl
@@ -129,6 +130,13 @@ Node& Node::operator=(Builder&& rhs)
 {
 	impl_ = move(rhs.impl_);
 	return *this;
+}
+
+void Builder::addProperty(PropertyMetadata::Builder&& propertyMetadata) noexcept
+{
+	auto meta = propertyMetadata.build();
+	auto p = std::make_shared<Property>(impl_->nodeType_, meta->hash(), meta);
+	impl_->properties_.emplace_back(p);
 }
 
 void Builder::mutateProperty(const HashValue hash, mutate_fn fn) noexcept

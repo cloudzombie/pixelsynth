@@ -14,7 +14,7 @@ private:
 	struct Impl;
 
 public:
-	Property(HashValue nodeType, HashValue propertyType);
+	Property(HashValue nodeType, HashValue propertyType, PropertyMetadataPtr metadata = nullptr);
 	~Property();
 
 	Property(const Property& rhs);
@@ -71,7 +71,7 @@ private:
 	friend struct property_eq_hash;
 
 	PropertyValue getPropertyValue(Frame frame) const noexcept;
-	void setMetadata(HashValue nodeType, HashValue propertyType) noexcept;
+	void setMetadata(HashValue nodeType, HashValue propertyType, PropertyMetadataPtr metadata = nullptr) noexcept;
 	PropertyValue defaultValue() noexcept;
 
 	Property();

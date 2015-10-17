@@ -26,12 +26,13 @@ public:
 	const tree_t& nodes() const noexcept;
 	const connections_t& connections() const noexcept;
 
-	NodePtr parent(NodePtr node) const noexcept;
-	NodePtr child(NodePtr parent, size_t index) const noexcept;
-	bool exists(NodePtr node) const noexcept;
-	size_t childIndex(NodePtr node) const noexcept;
-	size_t childCount(NodePtr node) const noexcept;
-	size_t totalChildCount(NodePtr node) const noexcept;
+	NodePtr parent(const Node& node) const noexcept;
+	NodePtr parent(const Property& prop) const noexcept;
+	NodePtr child(const Node& parent, size_t index) const noexcept;
+	bool exists(const Node& node) const noexcept;
+	size_t childIndex(const Node& node) const noexcept;
+	size_t childCount(const Node& node) const noexcept;
+	size_t totalChildCount(const Node& node) const noexcept;
 
 	class Builder
 	{
@@ -81,7 +82,7 @@ private:
 	template<class Archive> void save(Archive& archive) const;
 	template<class Archive>	void load(Archive& archive);
 
-	static tree_t::iterator iteratorFor(const tree_t& tree, NodePtr node) noexcept;
+	static tree_t::iterator iteratorFor(const tree_t& tree, const Node& node) noexcept;
 	std::unique_ptr<Impl> impl_;
 };
 

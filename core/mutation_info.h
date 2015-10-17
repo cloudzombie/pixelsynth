@@ -15,15 +15,19 @@ struct MutationInfo
 		T prev;
 		T cur;
 		ChangeType type;
-		NodePtr parent;
-		size_t index;
+		NodePtr prevParent;
+		NodePtr curParent;
+		size_t prevIndex;
+		size_t curIndex;
 
-		Change(const T prev, const T cur, ChangeType type, const NodePtr parent, size_t index)
+		Change(const T prev, const T cur, ChangeType type, const NodePtr prevParent, const NodePtr curParent, size_t prevIndex, size_t curIndex)
 			: prev(prev)
 			, cur(cur)
 			, type(type)
-			, parent(parent)
-			, index(index)
+			, prevParent(prevParent)
+			, curParent(curParent)
+			, prevIndex(prevIndex)
+			, curIndex(curIndex)
 		{
 		}
 
@@ -32,8 +36,10 @@ struct MutationInfo
 			return lhs.prev == rhs.prev
 				&& lhs.cur == rhs.cur
 				&& lhs.type == rhs.type
-				&& lhs.parent == rhs.parent
-				&& lhs.index == rhs.index;
+				&& lhs.prevParent == rhs.prevParent
+				&& lhs.curParent == rhs.curParent
+				&& lhs.prevIndex == rhs.prevIndex
+				&& lhs.curIndex == rhs.curIndex;
 		}
 
 		friend bool operator!=(const Change& lhs, const Change& rhs)
@@ -43,7 +49,27 @@ struct MutationInfo
 
 		friend bool operator<(const Change& lhs, const Change& rhs)
 		{
-			return lhs.index < rhs.index;
+			if (lhs.type == rhs.type)
+			{
+				switch (lhs.type)
+				{
+				case ChangeType::Added:
+					return (lhs.curIndex < rhs.curIndex)
+						|| (lhs.curIndex == rhs.curIndex && lhs.curParent < rhs.curParent);
+				case ChangeType::Removed:
+					// When removing we want to iterate based on previous indices
+					return (lhs.prevIndex < rhs.prevIndex)
+						|| (lhs.prevIndex == rhs.prevIndex && lhs.prevParent < rhs.prevParent);
+				case ChangeType::Mutated:
+				default:
+					return (lhs.prevIndex < rhs.prevIndex)
+						|| (lhs.prevIndex == rhs.prevIndex && lhs.curIndex < rhs.curIndex)
+						|| (lhs.prevIndex == rhs.prevIndex && lhs.curIndex == rhs.curIndex && lhs.prevParent < rhs.prevParent)
+						|| (lhs.prevIndex == rhs.prevIndex && lhs.curIndex == rhs.curIndex == lhs.prevParent < rhs.prevParent && lhs.curParent < rhs.curParent);
+				}
+			}
+			else
+				return lhs.type < rhs.type;
 		}
 
 		friend bool operator<=(const Change& lhs, const Change& rhs)
@@ -60,7 +86,7 @@ struct MutationInfo
 		{
 			return !(lhs < rhs);
 		}
-	
+
 		friend std::ostream& operator<<(std::ostream& out, const Change<T>& c)
 		{
 			std::string type;
@@ -77,7 +103,7 @@ struct MutationInfo
 				break;
 			}
 
-			out << "Change(" << type << ": " << *c.prev << ", " << *c.cur << ", " << *c.parent << ", index: " << c.index << ")";
+			out << "Change(" << type << ": " << *c.prev << ", " << *c.cur << ", " << *c.prevParent << ", " << *c.curParent << ", index: " << c.prevIndex << ", " << c.curIndex << ")";
 			return out;
 		}
 		friend std::ostream& operator<<(std::ostream& out, Change<T>* c) { out << *c; return out; }

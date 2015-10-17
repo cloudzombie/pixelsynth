@@ -45,6 +45,7 @@ public:
 		Builder(Builder&& rhs);
 		Builder& operator=(Builder&& rhs);
 
+		void addProperty(PropertyMetadata::Builder&& propertyMetadata) noexcept;
 		void mutateProperty(const HashValue hash, mutate_fn fn) noexcept;
 
 		void addConnector(ConnectorMetadata::Builder&& connector) noexcept;

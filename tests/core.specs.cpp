@@ -16,53 +16,53 @@ go_bandit([]() {
 
 		it("allows adding nodes", [&]()
 		{
-			AssertThat(p->current().totalChildCount(p->root()), Equals(0));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(0));
 			p->mutate([](auto& mut) { mut.append({ makeNode(hash("TestNode"), "a") }); });
-			AssertThat(p->current().totalChildCount(p->root()), Equals(1));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(1));
 			p->mutate([](auto& mut) { mut.append({ makeNode(hash("TestNode"), "b") }); });
-			AssertThat(p->current().totalChildCount(p->root()), Equals(2));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(2));
 			AssertThat(findNode(*p, "a") == nullptr, Equals(false));
 			AssertThat(findNode(*p, "b") == nullptr, Equals(false));
 			p->undo();
-			AssertThat(p->current().totalChildCount(p->root()), Equals(1));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(1));
 			AssertThat(findNode(*p, "a") == nullptr, Equals(false));
 			AssertThat(findNode(*p, "b") == nullptr, Equals(true));
 			p->undo();
-			AssertThat(p->current().totalChildCount(p->root()), Equals(0));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(0));
 			AssertThat(findNode(*p, "a") == nullptr, Equals(true));
 			AssertThat(findNode(*p, "b") == nullptr, Equals(true));
 		});
 
 		it("allows grouping nodes", [&]()
 		{
-			AssertThat(p->current().totalChildCount(p->root()), Equals(0));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(0));
 			p->mutate([](auto& mut)
 			{
 				mut.append({ makeNode(hash("TestNode"), "a") });
 				mut.append({ makeNode(hash("TestNode"), "b") });
 				mut.append({ makeNode(hash("TestNode"), "c") });
 			});
-			AssertThat(p->current().totalChildCount(p->root()), Equals(3));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(3));
 			p->mutate([](auto& mut) { mut.append({ makeNode(hash("TestNode"), "g1") }); });
 			auto g1 = findNode(*p, "g1");
 			auto b = findNode(*p, "b");
 			auto c = findNode(*p, "c");
 			p->mutate([&](auto& mut) { mut.reparent(g1, { b, c }); });
-			AssertThat(p->current().parent(b), Equals(g1));
-			AssertThat(p->current().parent(c), Equals(g1));
-			AssertThat(p->current().totalChildCount(g1), Equals(2));
-			AssertThat(p->current().totalChildCount(p->root()), Equals(4));
+			AssertThat(p->current().parent(*b), Equals(g1));
+			AssertThat(p->current().parent(*c), Equals(g1));
+			AssertThat(p->current().totalChildCount(*g1), Equals(2));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(4));
 			p->mutate([&](auto& mut)
 			{
 				auto g1 = findNode(*p, "g1");
 				mut.eraseChildren({ g1 });
 				mut.erase({ g1 });
 			});
-			AssertThat(p->current().totalChildCount(p->root()), Equals(1));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(1));
 
 			p->undo();
-			AssertThat(p->current().totalChildCount(g1), Equals(2));
-			AssertThat(p->current().totalChildCount(p->root()), Equals(4));
+			AssertThat(p->current().totalChildCount(*g1), Equals(2));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(4));
 		});
 
 		it("can reset", [&]()
@@ -70,12 +70,12 @@ go_bandit([]() {
 			const int NUM_ITERATIONS = 10;
 			for (int t = 0; t < NUM_ITERATIONS; t++) p->mutate([](auto& mut) { mut.append({ makeNode(hash("TestNode"), "a") }); });
 
-			AssertThat(p->current().totalChildCount(p->root()), Equals(NUM_ITERATIONS));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(NUM_ITERATIONS));
 
 			p = std::make_unique<Project>();
-			AssertThat(p->current().totalChildCount(p->root()), Equals(0));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(0));
 			for (int t = 0; t < NUM_ITERATIONS; t++) p->mutate([](auto& mut) { mut.append({ makeNode(hash("TestNode"), "a") }); });
-			AssertThat(p->current().totalChildCount(p->root()), Equals(NUM_ITERATIONS));
+			AssertThat(p->current().totalChildCount(*p->root()), Equals(NUM_ITERATIONS));
 		});
 	});
 

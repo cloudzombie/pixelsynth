@@ -12,15 +12,18 @@ Widget::Widget(QWidget* parent)
 	, tree_(new QTreeView(this))
 	, model_(std::make_shared<Model>())
 {
-	p.setMutationCallback([&](auto mutationInfo)
-	{
-		auto newSelection = model_->apply(mutationInfo, tree_->selectionModel()->selectedIndexes());
-		tree_->selectionModel()->clear();
-		for (auto&& item: newSelection) tree_->selectionModel()->select(item, QItemSelectionModel::Select);
-	});
-
-	tree_->setModel(model_.get());
+	auto proxy = new QSortFilterProxyModel(this);
+	proxy->setSourceModel(model_.get());
+	tree_->setModel(proxy);
 	tree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+
+	p.setMutationCallback([this, proxy](auto mutationInfo)
+	{
+		auto selection = proxy->mapSelectionToSource(tree_->selectionModel()->selection());
+		auto newSelection = model_->apply(mutationInfo, selection.indexes());
+		tree_->selectionModel()->clear();
+		for (auto&& item: newSelection) tree_->selectionModel()->select(proxy->mapFromSource(item), QItemSelectionModel::Select);
+	});
 
 	mutate();
 }

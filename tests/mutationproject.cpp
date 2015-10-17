@@ -13,16 +13,24 @@ void MutationProject::applyMutationsFromTo(size_t start, size_t end)
 
 void MutationProject::applyMutation(size_t mutationIndex)
 {
+	NodePtr a {}, b {}, c {};
+	if (mutationIndex > 0)
+	{
+		a = this->a[mutationIndex - 1];
+		b = this->b[mutationIndex - 1];
+		c = this->c[mutationIndex - 1];
+	}
+
 	switch (mutationIndex)
 	{
 	case 0:
 		// 0 = add nodes
 		this->mutate([&](auto& mut)
 		{
-			a0 = makeNode(hash("TestNode"), "a");
-			b0 = makeNode(hash("TestNode"), "b");
-			c0 = makeNode(hash("TestNode"), "c");
-			mut.append({ a0, b0, c0 });
+			a = makeNode(hash("TestNode"), "a");
+			b = makeNode(hash("TestNode"), "b");
+			c = makeNode(hash("TestNode"), "c");
+			mut.append({ a, b, c });
 		});
 		break;
 
@@ -30,7 +38,7 @@ void MutationProject::applyMutation(size_t mutationIndex)
 		// 1 = remove node
 		this->mutate([&](auto& mut)
 		{
-			mut.erase({ b0 });
+			mut.erase({ b });
 		});
 		break;
 
@@ -43,7 +51,7 @@ void MutationProject::applyMutation(size_t mutationIndex)
 		// 3 = set properties
 		this->mutate([&](Document::Builder& mut)
 		{
-			mut.mutate(a0, [&](Node::Builder& node)
+			mut.mutate(a, [&](Node::Builder& node)
 			{
 				node.mutateProperty(hash("int"), [&](Property::Builder& prop) { prop.set(100, 50); });
 				node.mutateProperty(hash("double"), [&](Property::Builder& prop) { prop.set(100, 50.0); });
@@ -52,37 +60,30 @@ void MutationProject::applyMutation(size_t mutationIndex)
 				node.mutateProperty(hash("string"), [&](Property::Builder& prop) { prop.set(100, "bob"); });
 			});
 		});
-		a3 = findNode(*this, "a");
 		break;
 
 	case 4:
 		// 4 = add connector
 		this->mutate([&](Document::Builder& mut)
 		{
-			mut.mutate(a3, [&](Node::Builder& node)
+			mut.mutate(a, [&](Node::Builder& node)
 			{
 				node.addConnector(ConnectorMetadata::Builder("Foo", ConnectorType::Output));
 			});
 		});
-		a4 = findNode(*this, "a");
 		break;
 
 	case 5:
 		// 5 = undo add connector
 		this->undo();
-		a5 = findNode(*this, "a");
 		break;
 
 	case 6:
 		// 6 = connect a.out to b.in
 		this->mutate([&](Document::Builder& mut)
 		{
-			auto node_a = findNode(*this, "a");
-			auto node_b = findNode(*this, "b");
-			mut.connect(std::make_shared<Connection>(make_tuple(node_a, connector(*node_a, "Out"), node_b, connector(*node_b, "In"))));
+			mut.connect(std::make_shared<Connection>(make_tuple(a, connector(*a, "Out"), b, connector(*b, "In"))));
 		});
-		a6 = findNode(*this, "a");
-		b6 = findNode(*this, "b");
 		break;
 
 	case 7:
@@ -91,47 +92,38 @@ void MutationProject::applyMutation(size_t mutationIndex)
 		break;
 
 	case 8:
-		// 8 = reparent a and b under c
+		// 8 = reparent a and b under c, in reverse order
 		this->mutate([&](Document::Builder& mut)
 		{
-			auto node_a = findNode(*this, "a");
-			auto node_b = findNode(*this, "b");
-			auto node_c = findNode(*this, "c");
-			mut.reparent(node_c, { node_a, node_b });
+			mut.reparent(c, { b, a });
 		});
-		a8 = findNode(*this, "a");
-		b8 = findNode(*this, "b");
-		c8 = findNode(*this, "c");
 		break;
 
 	case 9:
 		// 9 = undo reparent
 		this->undo();
-		a9 = findNode(*this, "a");
 		break;
 
 	case 10:
 		// 10 = set property double to animated
 		this->mutate([&](Document::Builder& mut)
 		{
-			mut.mutate(a9, [&](Node::Builder& node)
+			mut.mutate(a, [&](Node::Builder& node)
 			{
 				node.mutateProperty(hash("double"), [&](Property::Builder& prop) { prop.setAnimated(true); });
 			});
 		});
-		a10 = findNode(*this, "a");
 		break;
 
 	case 11:
 		// 11 = set property int to animated
 		this->mutate([&](Document::Builder& mut)
 		{
-			mut.mutate(a10, [&](Node::Builder& node)
+			mut.mutate(a, [&](Node::Builder& node)
 			{
 				node.mutateProperty(hash("int"), [&](Property::Builder& prop) { prop.setAnimated(true); });
 			});
 		});
-		a11 = findNode(*this, "a");
 		break;
 
 	case 12:
@@ -139,24 +131,78 @@ void MutationProject::applyMutation(size_t mutationIndex)
 		this->mutate([&](auto& mut)
 		{
 			auto node = makeNode(hash("TestNode"), "between_ab");
-			mut.insertBefore(b0, { node });
+			mut.insertBefore(b, { node });
 		});
-		between_ab12 = findNode(*this, "between_ab");
 		break;
 
 	case 13:
 		// 13 = rename node a to a!
 		this->mutate([&](Document::Builder& mut)
 		{
-			mut.mutate(a11, [&](Node::Builder& node)
+			mut.mutate(a, [&](Node::Builder& node)
 			{
 				node.mutateProperty(hash("$Title"), [&](Property::Builder& prop) { prop.set(0, "a!"); });
 			});
 		});
-		a13 = findNode(*this, "a!");
 		break;
 
 	case 14:
+		// 14 = add a property
+		this->mutate([&](Document::Builder& mut)
+		{
+			mut.mutate(a, [&](Node::Builder& node)
+			{
+				node.addProperty(PropertyMetadata::Builder("new_property").ofType<int>());
+			});
+		});
+		break;
+
+	case 15:
+		// 15 = undo add property
+		this->undo();
+		break;
+
+	case 16:
+		// 16 = rename a!! back to a
+		this->undo();
+		break;
+
+	case 17:
+		// 17 = remove between_ab
+		this->undo();
+		break;
+
+	case 18:
+		// 18 = reparent b under a
+		this->mutate([&](Document::Builder& mut)
+		{
+			mut.reparent(a, { b });
+		});
+		break;
+
+	case 19:
+		// 19 = reparent a under c, should also keep b reparented under a
+		this->mutate([&](Document::Builder& mut)
+		{
+			mut.reparent(c, { a });
+		});
+		break;
+
+	case 20:
 		throw new std::logic_error("No more migrations");
 	}
+
+	auto findHistory = [this, mutationIndex](std::array<NodePtr, 500>& arr, std::vector<std::string> names)
+	{
+		for (auto&& name: names)
+		{
+			auto&& ptr = findNode(*this, name);
+			if (ptr.get()) arr[mutationIndex] = ptr;
+		}
+	};
+
+	findHistory(this->a, { "a", "a!" });
+	findHistory(this->b, { "b" });
+	findHistory(this->c, { "c" });
+	findHistory(this->between_ab, { "between_ab" });
 }

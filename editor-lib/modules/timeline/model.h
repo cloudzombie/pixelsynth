@@ -6,20 +6,21 @@ BEGIN_NAMESPACE(Editor) BEGIN_NAMESPACE(Modules) BEGIN_NAMESPACE(Timeline)
 
 class Model: public QStandardItemModel
 {
+	class ModelItem;
+
 public:
 	Model();
 
 	QModelIndexList apply(std::shared_ptr<Core::MutationInfo> mutation, const QModelIndexList& oldSelection) noexcept;
-
 	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
+	const Core::Node* nodeFromIndex(const QModelIndex& index) const noexcept;
+	const Core::Property* propertyFromIndex(const QModelIndex& index) const noexcept;
+
 private:
-	QStandardItem* makeItem(const Core::NodePtr& node) const noexcept;
-	int findChildIndex(QStandardItem* parent, QStandardItem* item) const noexcept;
-	
-	QStandardItem* findItem(const Core::Node& node) const noexcept;
-	Core::Node* nodeFromIndex(const QModelIndex& index) const noexcept;
-	QModelIndex indexFromNode(const Core::Node& node) const noexcept;
+	static int findChildIndex(QStandardItem* parent, ModelItem* item) noexcept;
+
+	ModelItem* findItem(const void* ptr) const noexcept;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline)

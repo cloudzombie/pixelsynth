@@ -4,6 +4,8 @@
 using Core::Document;
 using Core::Node;
 using Core::NodePtr;
+using Core::Property;
+using Core::PropertyPtr;
 using Core::Connection;
 using Core::ConnectionPtr;
 using Core::HashValue;
@@ -46,44 +48,49 @@ const Document::connections_t& Document::connections() const noexcept
 	return impl_->connections_;
 }
 
-NodePtr Document::parent(NodePtr node) const noexcept
+NodePtr Document::parent(const Node& node) const noexcept
 {
-	assert(node);
 	auto it = iteratorFor(this->nodes(), node);
 	auto parent = tree_t::parent(it);
 	if (parent.node == nullptr) return nullptr; // root has no parent
 	return *parent;
 }
 
-NodePtr Document::child(NodePtr parent, size_t index) const noexcept
+NodePtr Document::parent(const Property& prop) const noexcept
 {
-	assert(parent);
+	for (auto&& node: this->nodes())
+	{
+		auto it = find_if(cbegin(node->properties()), cend(node->properties()), [&](auto& p) { return p.get() == &prop; });
+		if (it != cend(node->properties())) return node;
+	}
+	return nullptr;
+}
+
+NodePtr Document::child(const Node& parent, size_t index) const noexcept
+{
 	assert(childCount(parent) > index);
 	auto it = iteratorFor(this->nodes(), parent);
 	return *tree_t::child(it, index);
 }
 
-bool Document::exists(NodePtr node) const noexcept
+bool Document::exists(const Node& node) const noexcept
 {
-	return find(cbegin(this->nodes()), cend(this->nodes()), node) != cend(this->nodes());
+	return std::find_if(cbegin(this->nodes()), cend(this->nodes()), [&](auto& n) { return n.get() == &node; }) != cend(this->nodes());
 }
 
-size_t Document::childIndex(NodePtr node) const noexcept
+size_t Document::childIndex(const Node& node) const noexcept
 {
-	assert(node);
 	auto it = iteratorFor(this->nodes(), node);
 	return this->nodes().index(it);
 }
 
-size_t Document::childCount(NodePtr node) const noexcept
+size_t Document::childCount(const Node& node) const noexcept
 {
-	assert(node);
 	return this->nodes().number_of_children(iteratorFor(this->nodes(), node));
 }
 
-size_t Document::totalChildCount(NodePtr node) const noexcept
+size_t Document::totalChildCount(const Node& node) const noexcept
 {
-	assert(node);
 	return this->nodes().size(iteratorFor(this->nodes(), node)) - 1; // - 1 because it includes the node itself
 }
 
@@ -94,10 +101,9 @@ Document Document::buildRootDocument(NodePtr root) noexcept
 	return d;
 }
 
-Document::tree_t::iterator Document::iteratorFor(const tree_t& tree, NodePtr node) noexcept
+Document::tree_t::iterator Document::iteratorFor(const tree_t& tree, const Node& node) noexcept
 {
-	assert(node);
-	auto it = find(begin(tree), end(tree), node);
+	auto it = std::find_if(cbegin(tree), cend(tree), [&node](auto& n) { return n.get() == &node; });
 	assert(it != end(tree));
 	return it;
 }
@@ -200,7 +206,7 @@ void Builder::fixupConnections()
 void Builder::insertBefore(NodePtr before, std::initializer_list<NodePtr> nodes) noexcept
 {
 	assert(before);
-	auto beforePos = iteratorFor(impl_->nodes_, before);
+	auto beforePos = iteratorFor(impl_->nodes_, *before);
 
 	for (auto&& node : nodes)
 	{
@@ -216,7 +222,7 @@ void Builder::append(std::initializer_list<NodePtr> nodes) noexcept
 void Builder::append(NodePtr parent, std::initializer_list<NodePtr> nodes) noexcept
 {
 	assert(parent);
-	auto parentPos = iteratorFor(impl_->nodes_, parent);
+	auto parentPos = iteratorFor(impl_->nodes_, *parent);
 
 	for (auto&& node : nodes)
 	{
@@ -241,11 +247,11 @@ void Builder::eraseChildren(std::initializer_list<NodePtr> nodes) noexcept
 
 void Builder::reparent(NodePtr parent, std::initializer_list<NodePtr> nodes) noexcept
 {
-	auto parentPos = iteratorFor(impl_->nodes_, parent);
+	auto parentPos = iteratorFor(impl_->nodes_, *parent);
 
 	for (auto&& node: nodes)
 	{
-		impl_->nodes_.erase(iteratorFor(impl_->nodes_, node));
+		impl_->nodes_.erase(iteratorFor(impl_->nodes_, *node));
 		impl_->nodes_.append_child(parentPos, node);
 	}
 }
@@ -266,7 +272,7 @@ void Document::save(Archive& archive) const
 	archive(*it++);
 
 	std::map<NodePtr, std::vector<NodePtr>> nodes;
-	std::for_each(it, end(impl_->nodes_), [&](auto& node) { nodes[this->parent(node)].emplace_back(node); });
+	std::for_each(it, end(impl_->nodes_), [&](auto& node) { nodes[this->parent(*node)].emplace_back(node); });
 	archive(nodes);
 	archive(impl_->connections_);
 }
@@ -286,7 +292,7 @@ void Document::load(Archive& archive)
 		auto&& parent = kvp.first;
 		for (auto&& child : kvp.second)
 		{
-			auto parentPos = iteratorFor(impl_->nodes_, parent);
+			auto parentPos = iteratorFor(impl_->nodes_, *parent);
 			impl_->nodes_.append_child(parentPos, child);
 		}
 	}

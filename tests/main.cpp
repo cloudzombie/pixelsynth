@@ -7,7 +7,8 @@ using namespace Core;
 
 int main(int argc, char* argv[])
 {
-	Log::setConsoleInstance(spdlog::level::debug);
+	Log::setConsoleInstance(spdlog::level::info);
+	//spdlog::set_level(spdlog::level::info);
 	DefineNode(TestNode);
 
 	// Run the tests.

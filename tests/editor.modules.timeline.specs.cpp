@@ -31,12 +31,30 @@ go_bandit([]() {
 			auto m = std::make_shared<ModelTest>(model.get());
 		};
 
-		it("has added nodes", [&]()
+		auto assertProperties = [&](const std::vector<QModelIndex> nodeIndices)
+		{
+			for (auto&& nodeIndex : nodeIndices)
+			{
+				auto node = model->nodeFromIndex(nodeIndex);
+				LOG->debug("Asserting properties for node {}", Core::prop<std::string>(*node, "$Title", 0));
+
+				size_t propertyIndex = 0;
+				AssertThat(model->rowCount(nodeIndex), Equals(node->properties().size()));
+				for (auto& prop : node->properties())
+				{
+					AssertThat(model->propertyFromIndex(model->index(propertyIndex, 0, nodeIndex)), Equals(prop.get()));
+					propertyIndex++;
+				}
+			}
+		};
+
+		it("has added nodes and properties", [&]()
 		{
 			p->applyMutationsTo(0);
 			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("a"));
 			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
 			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
+			assertProperties({ model->index(0, 0), model->index(1, 0), model->index(2, 0) });
 		});
 
 		it("has removed nodes", [&]()
@@ -44,6 +62,7 @@ go_bandit([]() {
 			p->applyMutationsTo(1);
 			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("a"));
 			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
+			assertProperties({ model->index(0, 0), model->index(1, 0) });
 		});
 
 		it("has added nodes after undo", [&]()
@@ -52,6 +71,16 @@ go_bandit([]() {
 			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("a"));
 			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
 			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
+			assertProperties({ model->index(0, 0), model->index(1, 0), model->index(2, 0) });
+		});
+
+		it("has mutated properties", [&]()
+		{
+			p->applyMutationsTo(3);
+			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("a"));
+			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
+			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
+			assertProperties({ model->index(0, 0), model->index(1, 0), model->index(2, 0) });
 		});
 
 		it("can reparent from root to lower", [&]()
@@ -63,8 +92,8 @@ go_bandit([]() {
 
 			p->applyMutation(8);
 			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
-			AssertThat(model->data(model->index(0, 0, model->index(0, 0)), Qt::DisplayRole).toString().toStdString(), Equals("a"));
-			AssertThat(model->data(model->index(1, 0, model->index(0, 0)), Qt::DisplayRole).toString().toStdString(), Equals("b"));
+			AssertThat(model->data(model->index(0, 0, model->index(0, 0)), Qt::DisplayRole).toString().toStdString(), Equals("b"));
+			AssertThat(model->data(model->index(1, 0, model->index(0, 0)), Qt::DisplayRole).toString().toStdString(), Equals("a"));
 
 			AssertThat(newSelection.size(), Equals(2));
 			auto a = newSelection.at(0);
@@ -88,6 +117,8 @@ go_bandit([]() {
 			AssertThat(newSelection.size(), Equals(2));
 			AssertThat(model->data(newSelection.at(0), Qt::DisplayRole).toString().toStdString(), Equals("a") || Equals("c"));
 			AssertThat(model->data(newSelection.at(1), Qt::DisplayRole).toString().toStdString(), Equals("a") || Equals("c"));
+
+			assertProperties({ model->index(0, 0), model->index(1, 0), model->index(2, 0) });
 		});
 	
 		it("has inserted nodes", [&]()
@@ -97,6 +128,7 @@ go_bandit([]() {
 			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("between_ab"));
 			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
 			AssertThat(model->data(model->index(3, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
+			assertProperties({ model->index(0, 0), model->index(1, 0), model->index(2, 0), model->index(3, 0) });
 		});
 
 		it("has renamed a node", [&]()
@@ -112,6 +144,20 @@ go_bandit([]() {
 			AssertThat(newSelection.size(), Equals(2));
 			AssertThat(model->data(newSelection.at(0), Qt::DisplayRole).toString().toStdString(), Equals("a!") || Equals("c"));
 			AssertThat(model->data(newSelection.at(1), Qt::DisplayRole).toString().toStdString(), Equals("a!") || Equals("c"));
+	
+			assertProperties({ model->index(0, 0), model->index(1, 0), model->index(2, 0), model->index(3, 0) });
+		});
+
+		it("has added property", [&]()
+		{
+			p->applyMutationsTo(14);
+			assertProperties({ model->index(0, 0), model->index(1, 0), model->index(2, 0), model->index(3, 0) });
+		});
+
+		it("has removed property", [&]()
+		{
+			p->applyMutationsTo(15);
+			assertProperties({ model->index(0, 0), model->index(1, 0), model->index(2, 0), model->index(3, 0) });
 		});
 	});
 });

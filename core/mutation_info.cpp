@@ -17,7 +17,14 @@ using Change = MutationInfo::Change<T>;
 template <typename T>
 using ChangeSet = MutationInfo::ChangeSet<T>;
 
-using Index = std::pair<NodePtr, size_t>;
+struct Index
+{
+	const NodePtr prevParent;
+	size_t prevIndex;
+
+	const NodePtr curParent;
+	size_t curIndex;
+};
 
 /*
 	When determing what has mutated there can be different types of data to check:
@@ -91,7 +98,7 @@ struct Inserter
 
 	void operator()(Input prev, Input cur, ChangeType type, Index index)
 	{
-		data.insert(Change<Data>(prev, cur, type, index.first, index.second));
+		data.insert(Change<Data>(prev, cur, type, index.prevParent, index.curParent, index.prevIndex, index.curIndex));
 	}
 };
 
@@ -103,7 +110,7 @@ struct Inserter<std::tuple<NodePtr, Data, size_t>, Data>
 
 	void operator()(std::tuple<NodePtr, Data, size_t> prev, std::tuple<NodePtr, Data, size_t> cur, ChangeType type, Index index)
 	{
-		data.insert(Change<Data>(std::get<TupleIndex::Data>(prev), std::get<TupleIndex::Data>(cur), type, index.first, index.second));
+		data.insert(Change<Data>(std::get<TupleIndex::Data>(prev), std::get<TupleIndex::Data>(cur), type, index.prevParent, index.curParent, index.prevIndex, index.curIndex));
 	}
 };
 
@@ -111,9 +118,9 @@ struct Inserter<std::tuple<NodePtr, Data, size_t>, Data>
 struct NullIndexProvider
 {
 	template <typename Container, typename Iterator>
-	Index operator()(const Document& doc, const Container& container, Iterator& iterator)
+	Index operator()(const Document& prevDoc, const Container& prevContainer, Iterator& prevIterator, const Document& curDoc, const Container& curContainer, Iterator& curIterator)
 	{
-		return { nullptr, 0 };
+		return { nullptr, static_cast<size_t>(-1), nullptr, static_cast<size_t>(-1) };
 	}
 };
 
@@ -121,9 +128,12 @@ struct NullIndexProvider
 struct TupleIndexProvider
 {
 	template <typename Container, typename Iterator>
-	Index operator()(const Document& doc, const Container& container, Iterator& iterator)
+	Index operator()(const Document& prevDoc, const Container& prevContainer, Iterator& prevIterator, const Document& curDoc, const Container& curContainer, Iterator& curIterator)
 	{
-		return { std::get<TupleIndex::Node>(*iterator), std::distance(cbegin(container), iterator) };
+		return {
+			prevIterator == cend(prevContainer) ? nullptr : std::get<TupleIndex::Node>(*prevIterator), prevIterator == cend(prevContainer) ? -1 : static_cast<size_t>(std::distance(cbegin(prevContainer), prevIterator)),
+			curIterator == cend(curContainer) ? nullptr : std::get<TupleIndex::Node>(*curIterator), curIterator == cend(curContainer) ? -1 : static_cast<size_t>(std::distance(cbegin(curContainer), curIterator))
+		};
 	}
 };
 
@@ -131,9 +141,12 @@ struct TupleIndexProvider
 struct TreeParentIndexProvider
 {
 	template <typename Container, typename Iterator>
-	Index operator()(const Document& doc, const Container& container, Iterator& iterator)
+	Index operator()(const Document& prevDoc, const Container& prevContainer, Iterator& prevIterator, const Document& curDoc, const Container& curContainer, Iterator& curIterator)
 	{
-		return { doc.parent(*iterator), doc.childIndex(*iterator) };
+		return {
+			prevIterator == cend(prevContainer) ? nullptr : prevDoc.parent(**prevIterator), prevIterator == cend(prevContainer) ? -1 : prevDoc.childIndex(**prevIterator),
+			curIterator == cend(curContainer) ? nullptr : curDoc.parent(**curIterator), curIterator == cend(curContainer) ? -1 : curDoc.childIndex(**curIterator)
+		};
 	}
 };
 
@@ -147,14 +160,14 @@ void compareItems(Inserter& inserter, const Document& prevDocument, const Docume
 		if (prevIt == cend(prev))
 		{
 			// added
-			inserter({}, *curIt, ChangeType::Added, IndexProvider()(curDocument, cur, curIt));
+			inserter({}, *curIt, ChangeType::Added, IndexProvider()(prevDocument, prev, prevIt, curDocument, cur, curIt));
 		}
 		else
 		{
 			if (!EqualityFn(prevDocument, curDocument, *curIt)(*prevIt))
 			{
 				// mutated
-				inserter(*prevIt, *curIt, ChangeType::Mutated, IndexProvider()(curDocument, cur, curIt));
+				inserter(*prevIt, *curIt, ChangeType::Mutated, IndexProvider()(prevDocument, prev, prevIt, curDocument, cur, curIt));
 			}
 		}
 
@@ -168,7 +181,7 @@ void compareItems(Inserter& inserter, const Document& prevDocument, const Docume
 		if (curIt == cend(cur))
 		{
 			// removed
-			inserter(*prevIt, {}, ChangeType::Removed, IndexProvider()(prevDocument, prev, prevIt));
+			inserter(*prevIt, {}, ChangeType::Removed, IndexProvider()(prevDocument, prev, prevIt, curDocument, cur, curIt));
 		}
 
 		++prevIt;
@@ -206,7 +219,7 @@ auto compareAffectedNodes(const Document& prev, const Document& cur, std::unorde
 struct node_eq_ptr_and_parent
 {
 	explicit node_eq_ptr_and_parent(const Document& prev, const Document& cur, const NodePtr self):prev_(prev),cur_(cur),self_(self) { }
-	bool operator()(NodePtr other) const { return other == self_ && prev_.parent(self_) == cur_.parent(other); }
+	bool operator()(NodePtr other) const { return other == self_ && prev_.parent(*self_) == cur_.parent(*other); }
 private:
 	const Document& prev_;
 	const Document& cur_;

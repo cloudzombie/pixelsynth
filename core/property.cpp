@@ -8,6 +8,7 @@ using Core::Factory;
 using Core::Frame;
 using Core::HashValue;
 using Core::PropertyPtr;
+using Core::PropertyMetadataPtr;
 using Core::PropertyValue;
 using Builder = Property::Builder;
 
@@ -24,10 +25,10 @@ Property::Property()
 	: impl_(std::make_unique<Impl>())
 {}
 
-Property::Property(HashValue nodeType, HashValue propertyType)
+Property::Property(HashValue nodeType, HashValue propertyType, PropertyMetadataPtr metadata)
 	: impl_(std::make_unique<Impl>())
 {
-	setMetadata(nodeType, propertyType);
+	setMetadata(nodeType, propertyType, metadata);
 }
 
 Property::~Property() = default;
@@ -135,14 +136,21 @@ bool Property::samePropertyHash(const HashValue otherNodeType, const HashValue o
 HashValue Property::nodeType() const noexcept { return impl_->nodeType_; }
 HashValue Property::propertyType() const noexcept { return impl_->propertyType_; }
 
-void Property::setMetadata(HashValue nodeType, HashValue propertyType) noexcept
+void Property::setMetadata(HashValue nodeType, HashValue propertyType, PropertyMetadataPtr metadata) noexcept
 {
 	impl_->nodeType_ = nodeType;
 	impl_->propertyType_ = propertyType;
-	auto nodeMetadata = Factory::metadata(nodeType);
-	if (nodeMetadata)
+	if (metadata)
 	{
-		impl_->metadata_ = *find_if(begin(nodeMetadata->propertyMetadataCollection), end(nodeMetadata->propertyMetadataCollection), [&](auto& m) { return m->hash() == propertyType; });
+		impl_->metadata_ = metadata;
+	}
+	else
+	{
+		auto nodeMetadata = Factory::metadata(nodeType);
+		if (nodeMetadata)
+		{
+			impl_->metadata_ = *find_if(begin(nodeMetadata->propertyMetadataCollection), end(nodeMetadata->propertyMetadataCollection), [&](auto& m) { return m->hash() == propertyType; });
+		}
 	}
 }
 
