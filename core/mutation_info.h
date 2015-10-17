@@ -49,27 +49,7 @@ struct MutationInfo
 
 		friend bool operator<(const Change& lhs, const Change& rhs)
 		{
-			if (lhs.type == rhs.type)
-			{
-				switch (lhs.type)
-				{
-				case ChangeType::Added:
-					return (lhs.curIndex < rhs.curIndex)
-						|| (lhs.curIndex == rhs.curIndex && lhs.curParent < rhs.curParent);
-				case ChangeType::Removed:
-					// When removing we want to iterate based on previous indices
-					return (lhs.prevIndex < rhs.prevIndex)
-						|| (lhs.prevIndex == rhs.prevIndex && lhs.prevParent < rhs.prevParent);
-				case ChangeType::Mutated:
-				default:
-					return (lhs.prevIndex < rhs.prevIndex)
-						|| (lhs.prevIndex == rhs.prevIndex && lhs.curIndex < rhs.curIndex)
-						|| (lhs.prevIndex == rhs.prevIndex && lhs.curIndex == rhs.curIndex && lhs.prevParent < rhs.prevParent)
-						|| (lhs.prevIndex == rhs.prevIndex && lhs.curIndex == rhs.curIndex == lhs.prevParent < rhs.prevParent && lhs.curParent < rhs.curParent);
-				}
-			}
-			else
-				return lhs.type < rhs.type;
+			return &lhs < &rhs;
 		}
 
 		friend bool operator<=(const Change& lhs, const Change& rhs)

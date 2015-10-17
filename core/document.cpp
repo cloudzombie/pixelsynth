@@ -84,6 +84,18 @@ size_t Document::childIndex(const Node& node) const noexcept
 	return this->nodes().index(it);
 }
 
+size_t Document::childIndex(const Property& prop) const noexcept
+{
+	auto node = parent(prop);
+	size_t index = 0;
+	for (auto&& p: node->properties())
+	{
+		if (p.get() == &prop) return index;
+		index++;
+	}
+	return -1;
+}
+
 size_t Document::childCount(const Node& node) const noexcept
 {
 	return this->nodes().number_of_children(iteratorFor(this->nodes(), node));

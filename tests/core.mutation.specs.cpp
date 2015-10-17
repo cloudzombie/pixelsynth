@@ -34,10 +34,9 @@ go_bandit([]() {
 			auto mutation = mutations.at(0);
 			AssertThat(mutation->nodes.size(), Equals(3));
 			AssertThat(mutation->properties.size(), Equals(18));
-			auto m = begin(mutation->nodes);
-			AssertThat(*m++, Equals(Change<NodePtr>(nullptr, p->a[0], ChangeType::Added, nullptr, p->root(), -1, 0)));
-			AssertThat(*m++, Equals(Change<NodePtr>(nullptr, p->b[0], ChangeType::Added, nullptr, p->root(), -1, 1)));
-			AssertThat(*m++, Equals(Change<NodePtr>(nullptr, p->c[0], ChangeType::Added, nullptr, p->root(), -1, 2)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->a[0], ChangeType::Added, nullptr, p->root(), -1, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->b[0], ChangeType::Added, nullptr, p->root(), -1, 1)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->c[0], ChangeType::Added, nullptr, p->root(), -1, 2)));
 		});
 
 		it("should emit removed nodes", [&]()

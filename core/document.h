@@ -31,6 +31,7 @@ public:
 	NodePtr child(const Node& parent, size_t index) const noexcept;
 	bool exists(const Node& node) const noexcept;
 	size_t childIndex(const Node& node) const noexcept;
+	size_t childIndex(const Property& prop) const noexcept;
 	size_t childCount(const Node& node) const noexcept;
 	size_t totalChildCount(const Node& node) const noexcept;
 

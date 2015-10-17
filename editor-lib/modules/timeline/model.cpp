@@ -96,26 +96,41 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 
 	auto setRow = [&](QStandardItem* parent, size_t row, QList<QStandardItem*>& items, bool isNode)
 	{
-		// When inserting a node, make sure we also stay above any properties and above any nodes that have a higher index in the actual document
-		if (isNode)
+		// When inserting a new item, make sure we above any items that have a higher index in the actual document
+		// If we are inserting a node, also make sure we stay above any properties
+		auto maxRow = row;
+		for (row = 0; row < maxRow; row++)
 		{
-			auto maxRow = row;
-			for (row = 0; row < maxRow; row++)
+			if (row == static_cast<size_t>(parent->rowCount())) break;
+
+			auto child = parent->child(row);
+
+			// Encountered a property, so stop
+			if (isNode && ModelItem::prop(child)) break;
+
+			size_t index;
+
+			// Encountered a property that has a higher index than this item, so stop
+			auto prop = ModelItem::prop(child);
+			if (prop)
 			{
-				if (row == static_cast<size_t>(parent->rowCount())) break;
+				auto propNode = mutation->cur.parent(*prop);
+				// add node childCount because the properties start BELOW the child nodes
+				index = mutation->cur.childIndex(*prop) + mutation->cur.childCount(*propNode);
+				if (index > maxRow) break;
+			}
 
-				auto child = parent->child(row);
-
-				// Encountered a property, so stop
-				if (ModelItem::prop(child)) break;
-
-				// Encountered a node that has a higher index than this node, so stop
-				auto index = mutation->cur.childIndex(*ModelItem::node(child));
-				if (index > row) break;
+			// Encountered a node that has a higher index than this item, so stop
+			auto node = ModelItem::node(child);
+			if (node)
+			{
+				index = mutation->cur.childIndex(*node);
+				if (index > maxRow) break;
 			}
 		}
 
-		if (row < static_cast<size_t>(parent->rowCount())) parent->insertRow(row, items);
+		//LOG->debug("row: {}, rowCount: {}", row, parent->rowCount());
+		if (row <= static_cast<size_t>(parent->rowCount())) parent->insertRow(row, items);
 		else parent->appendRow(items);
 	};
 
