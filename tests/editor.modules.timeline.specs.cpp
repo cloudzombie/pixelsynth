@@ -43,6 +43,7 @@ go_bandit([]() {
 				for (auto& prop : node->properties())
 				{
 					AssertThat(model->propertyFromIndex(model->index(propertyIndex, 0, nodeIndex)), Equals(prop.get()));
+					AssertThat(model->roundTripPropertyValueFromIndex(model->index(propertyIndex, 1, nodeIndex)), Equals(prop->getPropertyValue(0)));
 					propertyIndex++;
 				}
 			}

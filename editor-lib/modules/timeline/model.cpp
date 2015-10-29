@@ -1,28 +1,159 @@
 #include "model.h"
 
+#include <editor-lib/application.h>
 #include <core/mutation_info.h>
 #include <core/utils.h>
 
 using Editor::Modules::Timeline::Model;
 using ChangeType = Core::MutationInfo::ChangeType;
-using Node = Core::Node;
-using Property = Core::Property;
-using Uuid = Core::Uuid;
+using Core::Node;
+using Core::Property;
+using Core::PropertyValue;
+using Core::Uuid;
 
 const size_t ModelItemDataRole = Qt::UserRole;
+
+///
+
+struct PropertyValueAsEditRole
+{
+	template <typename T>
+	QVariant operator()(const T& t)
+	{
+		return QVariant(t);
+	}
+};
+
+template <> QVariant PropertyValueAsEditRole::operator()<glm::vec2>(const glm::vec2& t) { return QVariant(QVector2D(t.x, t.y)); }
+template <> QVariant PropertyValueAsEditRole::operator()<glm::vec3>(const glm::vec3& t) { return QVariant(QVector3D(t.x, t.y, t.z)); }
+template <> QVariant PropertyValueAsEditRole::operator()<std::string>(const std::string& t) { return QVariant(t.c_str()); }
+
+///
+
+struct PropertyValueAsDisplayRole
+{
+	template <typename T>
+	QVariant operator()(const T& t)
+	{
+		return QVariant(t);
+	}
+};
+
+static QString doubleToString(double value, int decimals)
+{
+	QString str = QLocale::system().toString(value, 'f', decimals);
+	if (qAbs(value) >= 1000.0) str.remove(QLocale::system().groupSeparator());
+	return str;
+}
+
+template <> QVariant PropertyValueAsDisplayRole::operator()<glm::vec2>(const glm::vec2& t) { return QString("%1 %2").arg(doubleToString(t.x, 3)).arg(doubleToString(t.y, 3)); }
+template <> QVariant PropertyValueAsDisplayRole::operator()<glm::vec3>(const glm::vec3& t) { return QString("%1 %2 %3").arg(doubleToString(t.x, 3)).arg(doubleToString(t.y, 3)).arg(doubleToString(t.z, 3)); }
+template <> QVariant PropertyValueAsDisplayRole::operator()<std::string>(const std::string& t) { return t.c_str(); }
+
+///
+
+struct EditRoleAsPropertyValue
+{
+	QVariant v;
+
+	explicit EditRoleAsPropertyValue(QVariant v)
+		: v(v)
+	{}
+
+	template <typename T>
+	PropertyValue operator()(const T& type)
+	{
+		return v.value<T>();
+	}
+};
+
+template <> PropertyValue EditRoleAsPropertyValue::operator()<glm::vec2>(const glm::vec2& t) { return glm::vec2(v.value<QVector2D>().x(), v.value<QVector2D>().y()); }
+template <> PropertyValue EditRoleAsPropertyValue::operator()<glm::vec3>(const glm::vec3& t) { return glm::vec3(v.value<QVector3D>().x(), v.value<QVector3D>().y(), v.value<QVector3D>().z()); }
+template <> PropertyValue EditRoleAsPropertyValue::operator()<std::string>(const std::string& t) { return v.value<QString>().toStdString(); }
+
+///
+
+class PropertyValueItem: public QStandardItem
+{
+public:
+	explicit PropertyValueItem(const Property* prop)
+		: prop_(prop)
+	{
+		setFlags(Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsEnabled);
+		LOG->info("Creating PropertyValueItem for {}", *prop);
+	}
+
+	void update(const Property* prop)
+	{
+		prop_ = prop;
+		emitDataChanged();
+	}
+
+	QVariant data(int role) const override
+	{
+		switch (role)
+		{
+		case Qt::DisplayRole:
+			return apply(PropertyValueAsDisplayRole(), prop_->getPropertyValue(0));
+		case Qt::EditRole:
+			return apply(PropertyValueAsEditRole(), prop_->getPropertyValue(0));
+		default:
+			return QStandardItem::data(role);
+		}
+	}
+
+	PropertyValue roundTrip() const
+	{
+		QVariant qv = apply(PropertyValueAsEditRole(), prop_->getPropertyValue(0));
+		return apply(EditRoleAsPropertyValue(qv), prop_->getPropertyValue(0));
+	}
+
+private:
+	void setData(const QVariant& value, int role) override
+	{
+		if (role != Qt::EditRole)
+		{
+			QStandardItem::setData(value, role);
+			return;
+		}
+
+		auto& project = static_cast<Editor::Application*>(qApp)->activeProject();
+		auto& document = project.current();
+
+		project.mutate([&](Core::Document::Builder& mut)
+		{
+			auto&& parent = document.parent(*prop_);
+			assert(parent);
+			mut.mutate(parent, [&](Node::Builder& node)
+			{
+				node.mutateProperty(Core::hash(prop_->metadata().title().c_str()), [&](Property::Builder& prop)
+				{
+					prop.set(0, apply(EditRoleAsPropertyValue(value), prop_->getPropertyValue(0)));
+				});
+			});
+		});
+	}
+
+	const Property* prop_ {};
+};
+
+///
 
 class Model::ModelItem: public QStandardItem
 {
 public:
-	ModelItem(const Node* node)
+	explicit ModelItem(const Node* node)
 		: node_(node)
 	{
+		setFlags(flags_);
 		update(node);
 	}
 
-	ModelItem(const Property* prop)
+	explicit ModelItem(const Property* prop)
 		: prop_(prop)
+		, propertyValueItem_(new PropertyValueItem(prop_))
 	{
+		setFlags(flags_);
 		update(prop);
 	}
 
@@ -38,10 +169,12 @@ public:
 		prop_ = prop;
 		setData(QVariant::fromValue<void*>(const_cast<void*>(static_cast<const void*>(prop_))), ModelItemDataRole);
 		setData(prop->metadata().title().c_str(), Qt::DisplayRole);
+		propertyValueItem_->update(prop);
 	}
 
 	const Node* node() const { return node_; }
 	const Property* prop() const { return prop_; }
+	PropertyValueItem* propertyValueItem() const { return propertyValueItem_; }
 
 	static const Node* node(QStandardItem* item)
 	{
@@ -58,7 +191,12 @@ public:
 private:
 	const Node* node_ {};
 	const Property* prop_ {};
+	PropertyValueItem* propertyValueItem_ {};
+
+	const Qt::ItemFlags flags_ { Qt::ItemIsSelectable | Qt::ItemIsEnabled };
 };
+
+///
 
 Model::Model()
 {
@@ -94,7 +232,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		return item;
 	};
 
-	auto setRow = [&](QStandardItem* parent, size_t row, QList<QStandardItem*>& items, bool isNode)
+	auto setRow = [&](QStandardItem* parent, size_t row, QList<QStandardItem*>&& items, bool isNode)
 	{
 		// When inserting a new item, make sure we above any items that have a higher index in the actual document
 		// If we are inserting a node, also make sure we stay above any properties
@@ -134,7 +272,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		else parent->appendRow(items);
 	};
 
-	auto applyMutations = [&](auto& changes, bool isNode)
+	auto applyMutations = [&](auto& changes, bool isNode, auto& createItems)
 	{
 		for (auto&& mut : changes)
 		{
@@ -148,10 +286,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 			case ChangeType::Added:
 			{
 				LOG->debug("Adding at position {}: {}", mut.curIndex, *mut.cur);
-				QList<QStandardItem*> items;
-				auto i = new ModelItem(mut.cur.get());
-				items.append(i);
-				setRow(curParentNode, mut.curIndex, items, isNode);
+				setRow(curParentNode, mut.curIndex, createItems(mut.cur.get()), isNode);
 				break;
 			}
 			case ChangeType::Removed:
@@ -185,8 +320,19 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		}
 	};
 
-	applyMutations(mutation->nodes, true);
-	applyMutations(mutation->properties, false);
+	applyMutations(mutation->nodes, true, [&](const Node* node)
+	{
+		QList<QStandardItem*> items;
+		items << new ModelItem(node) << nullptr;
+		return items;
+	});
+	applyMutations(mutation->properties, false, [&](const Property* prop)
+	{
+		QList<QStandardItem*> items;
+		auto modelItem = new ModelItem(prop);
+		items << modelItem << modelItem->propertyValueItem();
+		return items;
+	});
 
 	// Generate new selection indices, perhaps based on mutated nodes
 	QModelIndexList newSelection;
@@ -196,10 +342,22 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 
 QVariant Model::headerData(int section, Qt::Orientation orientation, int role) const
 {
-	switch (section)
+	switch (role)
 	{
+	case Qt::DisplayRole:
+	{
+		switch (section)
+		{
+		case 0:
+			return "Name";
+		case 1:
+			return "Value";
+		default:
+			return "Unknown";
+		}
+	}
 	default:
-		return "Header";
+		return QVariant();
 	}
 }
 
@@ -224,12 +382,18 @@ Model::ModelItem* Model::findItem(const void* ptr) const noexcept
 	return static_cast<ModelItem*>(itemFromIndex(result.at(0)));
 }
 
-const Core::Node* Model::nodeFromIndex(const QModelIndex& index) const noexcept
+const Node* Model::nodeFromIndex(const QModelIndex& index) const noexcept
 {
 	return ModelItem::node(itemFromIndex(index));
 }
 
-const Core::Property* Model::propertyFromIndex(const QModelIndex& index) const noexcept
+const Property* Model::propertyFromIndex(const QModelIndex& index) const noexcept
 {
 	return ModelItem::prop(itemFromIndex(index));
+}
+
+PropertyValue Model::roundTripPropertyValueFromIndex(const QModelIndex& index) const noexcept
+{
+	auto item = static_cast<PropertyValueItem*>(itemFromIndex(index));
+	return item->roundTrip();
 }

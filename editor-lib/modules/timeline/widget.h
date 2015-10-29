@@ -1,7 +1,5 @@
 #pragma once
-#include <core/document.h>
 #include <editor-lib/static.h>
-#include <core/project.h>
 
 BEGIN_NAMESPACE(Editor) BEGIN_NAMESPACE(Modules) BEGIN_NAMESPACE(Timeline)
 
@@ -18,7 +16,6 @@ public:
 private:
 	QTreeView* tree_;
 	std::shared_ptr<Model> model_;
-	Core::Project p;
 	size_t mutationIndex {};
 };
 

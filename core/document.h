@@ -51,7 +51,7 @@ public:
 		Builder(Builder&& rhs);
 		Builder& operator=(Builder&& rhs);
 
-		void mutate(NodePtr node, mutate_fn fn) noexcept;
+		void mutate(NodePtr node, mutate_fn fn) const noexcept;
 
 		void insertBefore(NodePtr before, std::initializer_list<NodePtr> nodes) noexcept;
 		void append(std::initializer_list<NodePtr> nodes) noexcept;
@@ -63,7 +63,7 @@ public:
 
 		void connect(ConnectionPtr connection);
 
-		void fixupConnections();
+		void fixupConnections() const;
 
 	private:
 		Builder() = default;

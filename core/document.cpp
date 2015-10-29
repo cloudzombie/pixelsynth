@@ -162,7 +162,7 @@ Document& Document::operator=(Builder&& rhs)
 	return *this;
 }
 
-void Builder::mutate(NodePtr node, mutate_fn fn) noexcept
+void Builder::mutate(NodePtr node, mutate_fn fn) const noexcept
 {
 	auto b = Node::Builder(*node);
 	fn(b);
@@ -177,7 +177,7 @@ void Builder::mutate(NodePtr node, mutate_fn fn) noexcept
 	impl_->nodes_.replace(pos, newNode);
 }
 
-void Builder::fixupConnections()
+void Builder::fixupConnections() const
 {
 	connections_t fixed;
 

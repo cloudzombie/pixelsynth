@@ -1,7 +1,9 @@
 #include "widget.h"
 #include "model.h"
+#include "../property_editors/delegate.h"
 
 #include <core/utils.h>
+#include <editor-lib/application.h>
 
 using Editor::Modules::Timeline::Widget;
 
@@ -16,8 +18,9 @@ Widget::Widget(QWidget* parent)
 	proxy->setSourceModel(model_.get());
 	tree_->setModel(proxy);
 	tree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	tree_->setItemDelegateForColumn(1, new PropertyEditors::Delegate(tree_));
 
-	p.setMutationCallback([this, proxy](auto mutationInfo)
+	static_cast<Application*>(qApp)->activeProject().setMutationCallback([this, proxy](auto mutationInfo)
 	{
 		auto selection = proxy->mapSelectionToSource(tree_->selectionModel()->selection());
 		auto newSelection = model_->apply(mutationInfo, selection.indexes());
@@ -30,6 +33,7 @@ Widget::Widget(QWidget* parent)
 
 void Widget::mutate()
 {
+	auto& p = static_cast<Application*>(qApp)->activeProject();
 	switch (mutationIndex++)
 	{
 	case 0:

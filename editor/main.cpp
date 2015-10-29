@@ -1,5 +1,6 @@
 #include <editor-lib/static.h>
 #include <editor-lib/main_window.h>
+#include <editor-lib/application.h>
 #include <core/metadata.h>
 #include <core/factory.h>
 
@@ -14,7 +15,8 @@ struct DummyNode
 	{
 		return
 		{
-			p("$Title").ofType<std::string>().build()
+			p("$Title").ofType<std::string>().build(),
+			p("Vec3").ofType<glm::vec3>().build()
 		};
 	}
 
@@ -43,7 +45,7 @@ int main(int argc, char *argv[])
 	Log::setConsoleInstance(spdlog::level::debug);
 	DefineNode(DummyNode);
 
-	QApplication app(argc, argv);
+	Editor::Application app(argc, argv);
 	Editor::MainWindow ui;
 	return app.exec();
 }

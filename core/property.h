@@ -54,6 +54,8 @@ public:
 		return *getPropertyValue(frame).target<T>();
 	}
 
+	PropertyValue getPropertyValue(Frame frame) const noexcept;
+
 	const PropertyMetadata& metadata() const noexcept;
 	bool samePropertyHash(const PropertyPtr other) const noexcept;
 	bool samePropertyHash(const HashValue otherNodeType, const HashValue otherPropertyType) const noexcept;
@@ -70,7 +72,6 @@ private:
 
 	friend struct property_eq_hash;
 
-	PropertyValue getPropertyValue(Frame frame) const noexcept;
 	void setMetadata(HashValue nodeType, HashValue propertyType, PropertyMetadataPtr metadata = nullptr) noexcept;
 	PropertyValue defaultValue() noexcept;
 
