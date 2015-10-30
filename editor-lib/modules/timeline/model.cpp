@@ -228,7 +228,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 	auto resolve = [&](auto item) -> decltype(item)
 	{
 		auto it = mutated.find(item);
-		if (it != cend(mutated)) return *it->second.target<decltype(item)>();
+		if (it != cend(mutated)) return *it->second.template target<decltype(item)>();
 		return item;
 	};
 
@@ -272,7 +272,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		else parent->appendRow(items);
 	};
 
-	auto applyMutations = [&](auto& changes, bool isNode, auto& createItems)
+	auto applyMutations = [&](auto& changes, bool isNode, auto createItems)
 	{
 		for (auto&& mut : changes)
 		{
