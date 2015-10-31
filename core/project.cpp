@@ -60,6 +60,9 @@ void Project::mutate(mutate_fn fn, std::string description) noexcept
 
 void Project::mutate(std::initializer_list<mutate_fn> fns, std::string description) noexcept
 {
+	// When creating a new mutation, any redo actions that were still on the stack should be removed
+	while (!redoStack_.empty()) redoStack_.pop();
+
 	auto originalState = current();
 
 	bool needToReplace = false;
