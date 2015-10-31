@@ -189,6 +189,44 @@ void MutationProject::applyMutation(size_t mutationIndex)
 		break;
 
 	case 20:
+		// 20 = undo 19
+		this->undo();
+		break;
+
+	case 21:
+		// 21 = redo 19
+		this->redo();
+		break;
+
+	case 22:
+		// 22 = undo 19 (reparenting)
+		this->undo();
+		break;
+
+	case 23:
+		// 22 = undo 18 (reparenting now completely undone)
+		this->undo();
+		break;
+
+	case 24:
+		// 24 = add two nodes in separate mutation calls
+		this->mutate({
+			[&](auto& mut) { mut.insertBefore(b, { makeNode(hash("TestNode"), "between_ab") }); },
+			[&](auto& mut) { mut.insertBefore(b, { makeNode(hash("TestNode"), "between_ab2") }); }
+		});
+		break;
+
+	case 25:
+		// 25 = undo 24
+		this->undo();
+		break;
+
+	case 26:
+		// 26 = redo 24
+		this->redo();
+		break;
+
+	case 27:
 		throw new std::logic_error("No more migrations");
 	}
 
@@ -205,4 +243,5 @@ void MutationProject::applyMutation(size_t mutationIndex)
 	findHistory(this->b, { "b" });
 	findHistory(this->c, { "c" });
 	findHistory(this->between_ab, { "between_ab" });
+	findHistory(this->between_ab2, { "between_ab2" });
 }

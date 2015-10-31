@@ -80,7 +80,7 @@ public:
 		: prop_(prop)
 	{
 		setFlags(Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsEnabled);
-		LOG->info("Creating PropertyValueItem for {}", *prop);
+		LOG->debug("Creating PropertyValueItem for {}", *prop);
 	}
 
 	void update(const Property* prop)
@@ -228,7 +228,11 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 	auto resolve = [&](auto item) -> decltype(item)
 	{
 		auto it = mutated.find(item);
+#ifdef _MSC_VER
+		if (it != cend(mutated)) return *it->second.target<decltype(item)>();
+#else
 		if (it != cend(mutated)) return *it->second.template target<decltype(item)>();
+#endif
 		return item;
 	};
 

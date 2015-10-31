@@ -7,8 +7,9 @@ BEGIN_NAMESPACE(Core)
 class Project
 {
 public:
-	using history_t = std::vector<Document>;
-	using redohistory_t = std::stack<Document>;
+	using history_group_t = std::pair<std::string, Document>; // description + changes
+	using history_t = std::vector<history_group_t>;
+	using redohistory_t = std::stack<history_group_t>;
 	using mutate_fn = std::function<void(Document::Builder&)>;
 	using mutation_callback_fn = std::function<void(std::shared_ptr<MutationInfo>)>;
 
@@ -19,7 +20,8 @@ public:
 	void undo() noexcept;
 	void redo() noexcept;
 	const Document& current() const noexcept;
-	void mutate(mutate_fn fn) noexcept;
+	void mutate(mutate_fn fn, std::string description = "") noexcept;
+	void mutate(std::initializer_list<mutate_fn> fns, std::string description = "") noexcept;
 
 	void setMutationCallback(mutation_callback_fn fn) noexcept;
 

@@ -9,46 +9,62 @@ using Core::Project;
 Project::Project()
 	: root_(std::make_shared<Node>(HashValue()))
 {
-	history_.push_back(Document::buildRootDocument(root_));
+	history_group_t group = { "New project", { Document::buildRootDocument(root_) } };
+	history_.push_back(group);
 }
 
 void Project::undo() noexcept
 {
-	assert(history_.size());
+	assert(history_.size() > 1);
 
+	auto prevCurrent = current();
 	redoStack_.push(history_.back());
 	history_.pop_back();
 	
-	if (mutationCallback_) mutationCallback_(MutationInfo::compare(redoStack_.top(), current()));
+	if (mutationCallback_) mutationCallback_(MutationInfo::compare(prevCurrent, current()));
 }
 
 void Project::redo() noexcept
 {
 	assert(redoStack_.size());
 
+	auto prevCurrent = current();
 	history_.push_back(redoStack_.top());
 	redoStack_.pop();
 
-	if (mutationCallback_) mutationCallback_(MutationInfo::compare(history_.back(), current()));
+	if (mutationCallback_) mutationCallback_(MutationInfo::compare(prevCurrent, current()));
 }
 
 const Document& Project::current() const noexcept
 {
 	assert(history_.size());
-	return history_.back();
+	return history_.back().second;
 }
 
-void Project::mutate(mutate_fn fn) noexcept
+void Project::mutate(mutate_fn fn, std::string description) noexcept
 {
-	auto b = Document::Builder(current());
-	fn(b);
-	b.fixupConnections();
-	history_.push_back(std::move(b));
+	mutate({ fn }, description);
+}
+
+void Project::mutate(std::initializer_list<mutate_fn> fns, std::string description) noexcept
+{
+	auto originalState = current();
+
+	bool needToReplace = false;
+	for (auto&& fn : fns)
+	{
+		auto b = Document::Builder(current());
+		fn(b);
+		b.fixupConnections();
+
+		if (needToReplace) history_.pop_back();
+		history_.push_back({ description, std::move(b) });
+		needToReplace = true;
+	}
 
 	if (mutationCallback_)
 	{
-		auto prev = history_.size() >= 2 ? history_[history_.size() - 2] : Document();
-		mutationCallback_(MutationInfo::compare(prev, current()));
+		mutationCallback_(MutationInfo::compare(originalState, current()));
 	}
 }
 
@@ -75,7 +91,7 @@ void Project::load(Archive& archive)
 
 	Document d;
 	archive(d);
-	history_ = { d };
+	history_ = { { "New project", { d } } };
 }
 
 template void Project::save<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive) const;

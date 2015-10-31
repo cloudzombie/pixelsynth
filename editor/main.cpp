@@ -46,6 +46,6 @@ int main(int argc, char *argv[])
 	DefineNode(DummyNode);
 
 	Editor::Application app(argc, argv);
-	Editor::MainWindow ui;
+	Editor::MainWindow ui(app);
 	return app.exec();
 }
