@@ -20,7 +20,7 @@ Widget::Widget(QWidget* parent)
 	tree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	tree_->setItemDelegateForColumn(1, new PropertyEditors::Delegate(tree_));
 
-	static_cast<Application*>(qApp)->activeProject().setMutationCallback([this, proxy](auto mutationInfo)
+	connect(static_cast<Application*>(qApp), &Application::projectMutated, [this, proxy](auto mutationInfo)
 	{
 		auto selection = proxy->mapSelectionToSource(tree_->selectionModel()->selection());
 		auto newSelection = model_->apply(mutationInfo, selection.indexes());
@@ -33,7 +33,7 @@ Widget::Widget(QWidget* parent)
 
 void Widget::mutate()
 {
-	auto& p = static_cast<Application*>(qApp)->activeProject();
+	auto& p = static_cast<Application*>(qApp)->project();
 	switch (mutationIndex++)
 	{
 	case 0:
@@ -46,7 +46,7 @@ void Widget::mutate()
 		p.mutate({
 			[&](auto& mut) { mut.insertBefore(findNode(p, "a"), { makeNode(hash("DummyNode"), "b") }); },
 			[&](auto& mut) { mut.insertBefore(findNode(p, "b"), { makeNode(hash("DummyNode"), "c") }); }
-		});
+		}, "create nodes");
 		break;
 	case 2:
 		p.mutate([&](auto& mut) { mut.insertBefore(findNode(p, "c"), { makeNode(hash("DummyNode"), "d") }); });

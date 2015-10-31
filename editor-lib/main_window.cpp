@@ -46,27 +46,29 @@ void MainWindow::createMenu()
 
 	// EDIT
 	actionUndo_ = new QAction(tr("&Undo"), this);
+	actionUndo_->setEnabled(false);
 	actionUndo_->setShortcuts(QKeySequence::Undo);
 	connect(actionUndo_, &QAction::triggered, [&]() {
-		app_.activeProject().undo();
+		app_.project().undo();
 	});
 
 	actionRedo_ = new QAction(tr("&Redo"), this);
+	actionRedo_->setEnabled(false);
 	actionRedo_->setShortcuts(QKeySequence::Redo);
 	connect(actionRedo_, &QAction::triggered, [&]() {
-		app_.activeProject().redo();
+		app_.project().redo();
 	});
 
 	auto editMenu = menuBar()->addMenu(tr("&Edit"));
 	editMenu->addAction(actionUndo_);
 	editMenu->addAction(actionRedo_);
-}
 
-/*void MainWindow::updateMenuItems()
-{
-	actionUndo_->setEnabled(uiProject_.undoManager().canUndo());
-	actionRedo_->setEnabled(uiProject_.undoManager().canRedo());
-	actionUndo_->setText(tr("&Undo") + " " + uiProject_.undoManager().undoText());
-	actionRedo_->setText(tr("&Redo") + " " + uiProject_.undoManager().redoText());
+	connect(&app_, &Application::projectMutated, [&](auto mutationInfo)
+	{
+		auto undoState = app_.project().undoState();
+		actionUndo_->setText(tr("&Undo") + " " + undoState.undoDescription.c_str());
+		actionRedo_->setText(tr("&Redo") + " " + undoState.redoDescription.c_str());
+		actionUndo_->setEnabled(undoState.canUndo);
+		actionRedo_->setEnabled(undoState.canRedo);
+	});
 }
-*/

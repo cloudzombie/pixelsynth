@@ -117,7 +117,7 @@ private:
 			return;
 		}
 
-		auto& project = static_cast<Editor::Application*>(qApp)->activeProject();
+		auto& project = static_cast<Editor::Application*>(qApp)->project();
 		auto& document = project.current();
 
 		project.mutate([&](Core::Document::Builder& mut)

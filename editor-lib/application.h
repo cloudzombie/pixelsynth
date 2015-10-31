@@ -6,13 +6,18 @@ BEGIN_NAMESPACE(Editor)
 
 class Application: public QApplication
 {
+	Q_OBJECT
+
 public:
 	explicit Application(int argc, char *argv[]);
 
-	Core::Project& activeProject() noexcept { return activeProject_; }
+	Core::Project& project() noexcept { return project_; }
+
+signals:
+	void projectMutated(std::shared_ptr<Core::MutationInfo> mutationInfo);
 
 private:
-	Core::Project activeProject_;
+	Core::Project project_;
 };
 
 END_NAMESPACE(Editor)

@@ -9,8 +9,7 @@ using Core::Project;
 Project::Project()
 	: root_(std::make_shared<Node>(HashValue()))
 {
-	history_group_t group = { "New project", { Document::buildRootDocument(root_) } };
-	history_.push_back(group);
+	history_.push_back({ "New project", { Document::buildRootDocument(root_) } });
 }
 
 void Project::undo() noexcept
@@ -26,13 +25,26 @@ void Project::undo() noexcept
 
 void Project::redo() noexcept
 {
-	assert(redoStack_.size());
+	assert(!redoStack_.empty());
 
 	auto prevCurrent = current();
 	history_.push_back(redoStack_.top());
 	redoStack_.pop();
 
 	if (mutationCallback_) mutationCallback_(MutationInfo::compare(prevCurrent, current()));
+}
+
+Project::UndoState Project::undoState() const noexcept
+{
+	auto canUndo = history_.size() > 2; // first document is creating root, so there should at least be a second document to undo to
+	auto canRedo = !redoStack_.empty();
+
+	return {
+		canUndo ? history_.at(history_.size() - 1).first : "",
+		canRedo ? redoStack_.top().first : "",
+		canUndo,
+		canRedo
+	};
 }
 
 const Document& Project::current() const noexcept
