@@ -149,7 +149,7 @@ namespace Core {
 		ar(cd);
 	}
 
-	template void Uuid::serialize<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive);
-	template void Uuid::serialize<cereal::XMLInputArchive>(cereal::XMLInputArchive& archive);
+	template void Uuid::serialize<cereal::JSONOutputArchive>(cereal::JSONOutputArchive& archive);
+	template void Uuid::serialize<cereal::JSONInputArchive>(cereal::JSONInputArchive& archive);
 
 } // ::Core

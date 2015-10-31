@@ -32,19 +32,28 @@ go_bandit([]() {
 					node.addConnector(ConnectorMetadata::Builder("Test", ConnectorType::Output));
 				});
 			});
+			// reparent a and b under c, in reverse order
+			p->mutate([&](Document::Builder& mut)
+			{
+				auto node_a = findNode(*p, "a");
+				auto node_b = findNode(*p, "b");
+				auto node_c = findNode(*p, "c");
+				mut.reparent(node_c, { node_b, node_a });
+			});
+
 		});
 
 		it("should serialize and deserialize", [&]()
 		{
 			std::stringstream s;
 			{
-				cereal::XMLOutputArchive archive(s);
+				cereal::JSONOutputArchive archive(s);
 				archive(*p);
 			}
 
 			p2 = std::make_unique<Project>();
 			{
-				cereal::XMLInputArchive archive(s);
+				cereal::JSONInputArchive archive(s);
 				archive(*p2);
 			}
 

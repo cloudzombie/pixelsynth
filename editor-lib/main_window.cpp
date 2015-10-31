@@ -33,6 +33,27 @@ void MainWindow::createMenu()
 	auto actionNew = new QAction(tr("&New"), this);
 	actionNew->setShortcuts(QKeySequence::New);
 	connect(actionNew, &QAction::triggered, [&]() {
+		app_.clear();
+	});
+
+	auto actionOpen = new QAction(tr("&Open..."), this);
+	actionOpen->setShortcuts(QKeySequence::Open);
+	connect(actionOpen, &QAction::triggered, [&]() {
+		auto filename = QFileDialog::getOpenFileName(this, tr("Open project"), QString(), tr("Project files (*.json)"));
+		if (!filename.isEmpty())
+		{
+			app_.load(filename);
+		}
+	});
+
+	auto actionSaveAs = new QAction(tr("Save &As..."), this);
+	actionSaveAs->setShortcut(QKeySequence("Ctrl+Shift+S"));
+	connect(actionSaveAs, &QAction::triggered, [&]() {
+		auto filename = QFileDialog::getSaveFileName(this, tr("Save project"), QString(), tr("Project files (*.json)"));
+		if (!filename.isEmpty())
+		{
+			app_.save(filename);
+		}
 	});
 
 	auto actionExit = new QAction(tr("E&xit"), this);
@@ -41,6 +62,8 @@ void MainWindow::createMenu()
 
 	auto fileMenu = menuBar()->addMenu(tr("&File"));
 	fileMenu->addAction(actionNew);
+	fileMenu->addAction(actionOpen);
+	fileMenu->addAction(actionSaveAs);
 	fileMenu->addSeparator();
 	fileMenu->addAction(actionExit);
 

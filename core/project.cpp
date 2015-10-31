@@ -88,6 +88,11 @@ void Project::setMutationCallback(mutation_callback_fn fn) noexcept
 	mutationCallback_ = fn;
 }
 
+void Project::emitMutationsComparedTo(const Document& d) const noexcept
+{
+	mutationCallback_(MutationInfo::compare(d, current()));
+}
+
 ///
 
 template<class Archive>
@@ -109,5 +114,5 @@ void Project::load(Archive& archive)
 	history_ = { { "New project", { d } } };
 }
 
-template void Project::save<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive) const;
-template void Project::load<cereal::XMLInputArchive>(cereal::XMLInputArchive& archive);
+template void Project::save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive& archive) const;
+template void Project::load<cereal::JSONInputArchive>(cereal::JSONInputArchive& archive);

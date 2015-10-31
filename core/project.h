@@ -42,6 +42,7 @@ public:
 	void mutate(std::initializer_list<mutate_fn> fns, std::string description = "") noexcept;
 
 	void setMutationCallback(mutation_callback_fn fn) noexcept;
+	void emitMutationsComparedTo(const Document& d) const noexcept;
 
 private:	
 	friend class cereal::access;

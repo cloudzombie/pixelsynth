@@ -27,8 +27,6 @@ Widget::Widget(QWidget* parent)
 		tree_->selectionModel()->clear();
 		for (auto&& item: newSelection) tree_->selectionModel()->select(proxy->mapFromSource(item), QItemSelectionModel::Select);
 	});
-
-	mutate();
 }
 
 void Widget::mutate()

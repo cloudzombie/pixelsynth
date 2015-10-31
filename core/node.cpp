@@ -186,5 +186,5 @@ void Node::load(Archive& archive)
 	for (auto& c : localConnectors) impl_->localConnectorMetadata_.emplace_back(c);
 }
 
-template void Node::save<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive) const;
-template void Node::load<cereal::XMLInputArchive>(cereal::XMLInputArchive& archive);
+template void Node::save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive& archive) const;
+template void Node::load<cereal::JSONInputArchive>(cereal::JSONInputArchive& archive);

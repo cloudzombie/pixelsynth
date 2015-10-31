@@ -23,6 +23,7 @@ public:
 	Document(Document&& rhs);
 	Document& operator=(Document&& rhs);
 
+	const NodePtr& root() const noexcept;
 	const tree_t& nodes() const noexcept;
 	const connections_t& connections() const noexcept;
 

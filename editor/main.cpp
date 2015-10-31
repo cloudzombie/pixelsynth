@@ -1,5 +1,4 @@
 #include <editor-lib/static.h>
-#include <editor-lib/main_window.h>
 #include <editor-lib/application.h>
 #include <core/metadata.h>
 #include <core/factory.h>
@@ -46,6 +45,5 @@ int main(int argc, char *argv[])
 	DefineNode(DummyNode);
 
 	Editor::Application app(argc, argv);
-	Editor::MainWindow ui(app);
 	return app.exec();
 }

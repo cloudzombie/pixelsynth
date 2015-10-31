@@ -280,5 +280,5 @@ void Property::load(Archive& archive)
 	archive(impl_->animated_);
 }
 
-template void Property::save<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive) const;
-template void Property::load<cereal::XMLInputArchive>(cereal::XMLInputArchive& archive);
+template void Property::save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive& archive) const;
+template void Property::load<cereal::JSONInputArchive>(cereal::JSONInputArchive& archive);

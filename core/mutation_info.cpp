@@ -295,6 +295,11 @@ std::shared_ptr<MutationInfo> MutationInfo::compare(const Document& prev, const 
 	std::unordered_set<NodePtr, std::hash<NodePtr>, node_uuid_key_fn> prevNodes, curNodes;
 	copyDiffering<node_eq_ptr_and_parent>(prev, cur, prevNodes, curNodes, prev.nodes(), cur.nodes());
 
+	// Remove the root nodes, they should never be considered changed
+	prevNodes.erase(prev.root());
+	curNodes.erase(cur.root());
+
+	//
 	Inserter<NodePtr, NodePtr> nodeInserter;
 	compareItems<TreeParentIndexProvider, node_eq_ptr_and_parent>(nodeInserter, prev, cur, prevNodes, curNodes);
 	info->nodes = nodeInserter.data;

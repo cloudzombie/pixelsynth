@@ -38,6 +38,11 @@ Document& Document::operator=(const Document& rhs)
 Document::Document(Document&& rhs) = default;
 Document& Document::operator=(Document&& rhs) = default;
 
+const NodePtr& Document::root() const noexcept
+{
+	return *begin(impl_->nodes_);
+}
+
 const Document::tree_t& Document::nodes() const noexcept
 {
 	return impl_->nodes_;
@@ -314,6 +319,6 @@ void Document::load(Archive& archive)
 	for (auto&& con : connections) impl_->connections_.emplace_back(con);
 }
 
-template void Document::save<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive) const;
-template void Document::load<cereal::XMLInputArchive>(cereal::XMLInputArchive& archive);
+template void Document::save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive& archive) const;
+template void Document::load<cereal::JSONInputArchive>(cereal::JSONInputArchive& archive);
 

@@ -83,5 +83,5 @@ void Connection::load(Archive& archive)
 	impl_->connection_ = make_tuple(outputNode, output, inputNode, input);
 }
 
-template void Connection::save<cereal::XMLOutputArchive>(cereal::XMLOutputArchive& archive) const;
-template void Connection::load<cereal::XMLInputArchive>(cereal::XMLInputArchive& archive);
+template void Connection::save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive& archive) const;
+template void Connection::load<cereal::JSONInputArchive>(cereal::JSONInputArchive& archive);
