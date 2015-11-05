@@ -288,8 +288,8 @@ void Document::save(Archive& archive) const
 	// root
 	archive(*it++);
 
-	std::map<NodePtr, std::vector<NodePtr>> nodes;
-	std::for_each(it, end(impl_->nodes_), [&](auto& node) { nodes[this->parent(*node)].emplace_back(node); });
+	std::vector<std::pair<NodePtr, NodePtr>> nodes;
+	std::for_each(it, end(impl_->nodes_), [&](auto& node) { nodes.emplace_back(std::make_pair(this->parent(*node), node)); });
 	archive(nodes);
 	archive(impl_->connections_);
 }
@@ -301,17 +301,20 @@ void Document::load(Archive& archive)
 	archive(root);
 	impl_->nodes_.set_head(root);
 
-	std::map<MutableNodePtr, std::vector<MutableNodePtr>> nodes;
+	std::vector<std::pair<MutableNodePtr, MutableNodePtr>> nodes;
 	archive(nodes);
 
 	for (auto&& kvp : nodes)
 	{
 		auto&& parent = kvp.first;
-		for (auto&& child : kvp.second)
-		{
-			auto parentPos = iteratorFor(impl_->nodes_, *parent);
-			impl_->nodes_.append_child(parentPos, child);
-		}
+		auto&& child = kvp.second;
+		impl_->nodes_.insert(end(impl_->nodes_), child);
+
+		LOG->info("Inserting under {}: {}", *parent, *child);
+
+		auto parentPos = iteratorFor(impl_->nodes_, *parent);
+		auto it = iteratorFor(impl_->nodes_, *child);
+		impl_->nodes_.reparent(parentPos, it, impl_->nodes_.next_sibling(it));
 	}
 
 	std::vector<MutableConnectionPtr> connections;

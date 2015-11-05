@@ -18,6 +18,7 @@
 #include <glm/vec3.hpp>
 #include <cereal/archives/json.hpp>
 #include <cereal/types/map.hpp>
+#include <cereal/types/utility.hpp>
 #include <cereal/types/unordered_set.hpp>
 #include <cereal/types/memory.hpp>
 #include <cereal/types/tuple.hpp>
