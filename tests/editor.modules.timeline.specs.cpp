@@ -165,6 +165,8 @@ go_bandit([]() {
 		it("has reparented nodes", [&]()
 		{
 			p->applyMutationsTo(27);
+			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("between_ab"));
+			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("between_ab2"));
 			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("d"));
 			AssertThat(model->data(model->index(0, 0, model->index(2, 0)), Qt::DisplayRole).toString().toStdString(), Equals("b"));
 			AssertThat(model->data(model->index(0, 0, model->index(0, 0, model->index(2, 0))), Qt::DisplayRole).toString().toStdString(), Equals("a"));
@@ -176,9 +178,9 @@ go_bandit([]() {
 		it("has moved and added nodes", [&]()
 		{
 			p->applyMutationsTo(30);
-			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
-			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
-			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("d"));
+			AssertThat(model->data(model->index(0, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
+			AssertThat(model->data(model->index(1, 0), Qt::DisplayRole).toString().toStdString(), Equals("d"));
+			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("b"));
 			AssertThat(model->data(model->index(3, 0), Qt::DisplayRole).toString().toStdString(), Equals("a"));
 			assertProperties({ model->index(0, 0), model->index(1, 0), model->index(2, 0), model->index(3, 0) });
 			AssertThat(model->rowCount(), Equals(4));

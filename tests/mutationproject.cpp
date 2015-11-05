@@ -254,12 +254,12 @@ void MutationProject::applyMutation(size_t mutationIndex)
 		break;
 
 	case 30:
-		// 30 = in one call, create d and move a below d
+		// 30 = in one call, create d and move b + a below d
 		{
 			auto d = makeNode(hash("TestNode"), "d");
 			this->mutate({
 				[&](auto& mut) { mut.append({ d }); } ,
-				[&](auto& mut) { mut.moveAfter(d, { a }); }
+				[&](auto& mut) { mut.moveAfter(d, { b, a }); }
 			});
 		}
 		break;

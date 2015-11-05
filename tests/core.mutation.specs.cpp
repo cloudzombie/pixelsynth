@@ -230,9 +230,9 @@ go_bandit([]() {
 			auto mutation = mutations.at(30);
 			AssertThat(mutation->nodes.size(), Equals(4));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a[30], p->a[30], ChangeType::Mutated, p->root(), p->root(), 0, 3)));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[30], p->b[30], ChangeType::Mutated, p->root(), p->root(), 1, 0)));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[30], p->c[30], ChangeType::Mutated, p->root(), p->root(), 2, 1)));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->d[30], ChangeType::Added, nullptr, p->root(), -1, 2)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[30], p->b[30], ChangeType::Mutated, p->root(), p->root(), 1, 2)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[30], p->c[30], ChangeType::Mutated, p->root(), p->root(), 2, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->d[30], ChangeType::Added, nullptr, p->root(), -1, 1)));
 		});
 
 		it("should propertly undo insert + move", [&]()
@@ -240,9 +240,9 @@ go_bandit([]() {
 			auto mutation = mutations.at(31);
 			AssertThat(mutation->nodes.size(), Equals(4));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a[30], p->a[30], ChangeType::Mutated, p->root(), p->root(), 3, 0)));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[30], p->b[30], ChangeType::Mutated, p->root(), p->root(), 0, 1)));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[30], p->c[30], ChangeType::Mutated, p->root(), p->root(), 1, 2)));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->d[30], nullptr, ChangeType::Removed, p->root(), nullptr, 2, -1)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[30], p->b[30], ChangeType::Mutated, p->root(), p->root(), 2, 1)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[30], p->c[30], ChangeType::Mutated, p->root(), p->root(), 0, 2)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->d[30], nullptr, ChangeType::Removed, p->root(), nullptr, 1, -1)));
 		});
 	});
 });

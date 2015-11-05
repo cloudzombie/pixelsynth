@@ -278,6 +278,7 @@ void Builder::moveAfter(NodePtr after, std::initializer_list<NodePtr> nodes) noe
 	{
 		auto nodePos = iteratorFor(impl_->nodes_, *node);
 		impl_->nodes_.move_after(afterPos, nodePos);
+		afterPos = nodePos;
 	}
 }
 
