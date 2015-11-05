@@ -20,7 +20,7 @@ void Project::undo() noexcept
 	redoStack_.push(history_.back());
 	history_.pop_back();
 	
-	if (mutationCallback_) mutationCallback_(MutationInfo::compare(prevCurrent, current()));
+	if (mutationCallback_) mutationCallback_(std::make_shared<MutationInfo>(prevCurrent, current()));
 }
 
 void Project::redo() noexcept
@@ -31,7 +31,7 @@ void Project::redo() noexcept
 	history_.push_back(redoStack_.top());
 	redoStack_.pop();
 
-	if (mutationCallback_) mutationCallback_(MutationInfo::compare(prevCurrent, current()));
+	if (mutationCallback_) mutationCallback_(std::make_shared<MutationInfo>(prevCurrent, current()));
 }
 
 Project::UndoState Project::undoState() const noexcept
@@ -79,7 +79,7 @@ void Project::mutate(std::initializer_list<mutate_fn> fns, std::string descripti
 
 	if (mutationCallback_)
 	{
-		mutationCallback_(MutationInfo::compare(originalState, current()));
+		mutationCallback_(std::make_shared<MutationInfo>(originalState, current()));
 	}
 }
 
@@ -90,7 +90,7 @@ void Project::setMutationCallback(mutation_callback_fn fn) noexcept
 
 void Project::emitMutationsComparedTo(const Document& d) const noexcept
 {
-	mutationCallback_(MutationInfo::compare(d, current()));
+	mutationCallback_(std::make_shared<MutationInfo>(d, current()));
 }
 
 ///

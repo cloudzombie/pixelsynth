@@ -43,7 +43,7 @@ const NodePtr& Document::root() const noexcept
 	return *begin(impl_->nodes_);
 }
 
-const Document::tree_t& Document::nodes() const noexcept
+const Core::tree_t& Document::nodes() const noexcept
 {
 	return impl_->nodes_;
 }
@@ -67,6 +67,16 @@ NodePtr Document::parent(const Property& prop) const noexcept
 	{
 		auto it = find_if(cbegin(node->properties()), cend(node->properties()), [&](auto& p) { return p.get() == &prop; });
 		if (it != cend(node->properties())) return node;
+	}
+	return nullptr;
+}
+
+NodePtr Document::parent(const ConnectorMetadata& connectorMetadata) const noexcept
+{
+	for (auto&& node : this->nodes())
+	{
+		auto it = find_if(cbegin(node->connectorMetadata()), cend(node->connectorMetadata()), [&](auto& p) { return p.get() == &connectorMetadata; });
+		if (it != cend(node->connectorMetadata())) return node;
 	}
 	return nullptr;
 }
@@ -101,6 +111,18 @@ size_t Document::childIndex(const Property& prop) const noexcept
 	return -1;
 }
 
+size_t Document::childIndex(const ConnectorMetadata& connectorMetadata) const noexcept
+{
+	auto node = parent(connectorMetadata);
+	size_t index = 0;
+	for (auto&& p : node->connectorMetadata())
+	{
+		if (p.get() == &connectorMetadata) return index;
+		index++;
+	}
+	return -1;
+}
+
 size_t Document::childCount(const Node& node) const noexcept
 {
 	return this->nodes().number_of_children(iteratorFor(this->nodes(), node));
@@ -118,7 +140,7 @@ Document Document::buildRootDocument(NodePtr root) noexcept
 	return d;
 }
 
-Document::tree_t::iterator Document::iteratorFor(const tree_t& tree, const Node& node) noexcept
+Core::tree_t::iterator Document::iteratorFor(const Core::tree_t& tree, const Node& node) noexcept
 {
 	auto it = std::find_if(cbegin(tree), cend(tree), [&node](auto& n) { return n.get() == &node; });
 	assert(it != end(tree));
@@ -309,8 +331,6 @@ void Document::load(Archive& archive)
 		auto&& parent = kvp.first;
 		auto&& child = kvp.second;
 		impl_->nodes_.insert(end(impl_->nodes_), child);
-
-		LOG->info("Inserting under {}: {}", *parent, *child);
 
 		auto parentPos = iteratorFor(impl_->nodes_, *parent);
 		auto it = iteratorFor(impl_->nodes_, *child);

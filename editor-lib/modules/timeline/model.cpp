@@ -236,8 +236,17 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		return item;
 	};
 
-	auto setRow = [&](QStandardItem* parent, size_t row, QList<QStandardItem*>&& items, bool isNode)
+	enum class RowType { Node, Property };
+
+	auto setRow = [&](QStandardItem* parent, size_t row, QList<QStandardItem*>&& items, RowType rowType)
 	{
+		if (rowType == RowType::Property)
+		{
+			// Properties are indexed from 0, but they should always go below the node children of the parent
+			// So increase the row offset by the number of children the parent has
+			row += mutation->cur.childCount(*mutation->cur.parent(*ModelItem::node(parent)));
+		}
+
 		// When inserting a new item, make sure we above any items that have a higher index in the actual document
 		// If we are inserting a node, also make sure we stay above any properties
 		auto maxRow = row;
@@ -248,7 +257,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 			auto child = parent->child(row);
 
 			// Encountered a property, so stop
-			if (isNode && ModelItem::prop(child)) break;
+			if (rowType == RowType::Node && ModelItem::prop(child)) break;
 
 			size_t index;
 
@@ -276,21 +285,21 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		else parent->appendRow(items);
 	};
 
-	auto applyMutations = [&](auto& changes, bool isNode, auto createItems)
+	auto applyMutations = [&](auto& changes, RowType rowType, auto createItems)
 	{
 		for (auto&& mut : changes)
 		{
 			QStandardItem* prevParentNode = findItem(resolve(mut.prevParent.get()));
-			if (!prevParentNode && isNode) prevParentNode = invisibleRootItem();
+			if (!prevParentNode && rowType == RowType::Node) prevParentNode = invisibleRootItem();
 			QStandardItem* curParentNode = findItem(resolve(mut.curParent.get()));
-			if (!curParentNode && isNode) curParentNode = invisibleRootItem();
+			if (!curParentNode && rowType == RowType::Node) curParentNode = invisibleRootItem();
 
 			switch (mut.type)
 			{
 			case ChangeType::Added:
 			{
 				LOG->debug("Adding at position {}: {}", mut.curIndex, *mut.cur);
-				setRow(curParentNode, mut.curIndex, createItems(mut.cur.get()), isNode);
+				setRow(curParentNode, mut.curIndex, createItems(mut.cur.get()), rowType);
 				break;
 			}
 			case ChangeType::Removed:
@@ -316,7 +325,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 
 				if (prevIndex != mut.curIndex || prevParentNode != curParentNode)
 				{
-					setRow(curParentNode, mut.curIndex, prevParentNode->takeRow(prevIndex), isNode);
+					setRow(curParentNode, mut.curIndex, prevParentNode->takeRow(prevIndex), rowType);
 				}
 				break;
 			}
@@ -324,13 +333,13 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		}
 	};
 
-	applyMutations(mutation->nodes, true, [&](const Node* node)
+	applyMutations(mutation->nodes, RowType::Node, [&](const Node* node)
 	{
 		QList<QStandardItem*> items;
 		items << new ModelItem(node) << nullptr;
 		return items;
 	});
-	applyMutations(mutation->properties, false, [&](const Property* prop)
+	applyMutations(mutation->properties, RowType::Property, [&](const Property* prop)
 	{
 		QList<QStandardItem*> items;
 		auto modelItem = new ModelItem(prop);

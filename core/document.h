@@ -7,7 +7,6 @@ BEGIN_NAMESPACE(Core)
 class Document
 {
 public:
-	using tree_t = tree<NodePtr>;
 	using connections_t = std::vector<ConnectionPtr>;
 
 private:
@@ -29,10 +28,12 @@ public:
 
 	NodePtr parent(const Node& node) const noexcept;
 	NodePtr parent(const Property& prop) const noexcept;
+	NodePtr parent(const ConnectorMetadata& connectorMetadata) const noexcept;
 	NodePtr child(const Node& parent, size_t index) const noexcept;
 	bool exists(const Node& node) const noexcept;
 	size_t childIndex(const Node& node) const noexcept;
 	size_t childIndex(const Property& prop) const noexcept;
+	size_t childIndex(const ConnectorMetadata& connectorMetadata) const noexcept;
 	size_t childCount(const Node& node) const noexcept;
 	size_t totalChildCount(const Node& node) const noexcept;
 

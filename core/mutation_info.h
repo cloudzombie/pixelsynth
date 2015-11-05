@@ -5,7 +5,7 @@ BEGIN_NAMESPACE(Core)
 
 struct MutationInfo
 {
-	static std::shared_ptr<MutationInfo> compare(const Document& prev, const Document& cur) noexcept;
+	MutationInfo(const Document& prev, const Document& cur);
 
 	enum class ChangeType { Added, Removed, Mutated };
 
@@ -47,26 +47,6 @@ struct MutationInfo
 			return !(lhs == rhs);
 		}
 
-		friend bool operator<(const Change& lhs, const Change& rhs)
-		{
-			return &lhs < &rhs;
-		}
-
-		friend bool operator<=(const Change& lhs, const Change& rhs)
-		{
-			return !(rhs < lhs);
-		}
-
-		friend bool operator>(const Change& lhs, const Change& rhs)
-		{
-			return rhs < lhs;
-		}
-
-		friend bool operator>=(const Change& lhs, const Change& rhs)
-		{
-			return !(lhs < rhs);
-		}
-
 		friend std::ostream& operator<<(std::ostream& out, const Change<T>& c)
 		{
 			std::string type;
@@ -90,7 +70,7 @@ struct MutationInfo
 	};
 
 	template <typename T>
-	using ChangeSet = std::set<Change<T>>;
+	using ChangeSet = std::vector<Change<T>>;
 
 	ChangeSet<NodePtr> nodes;
 	ChangeSet<PropertyPtr> properties;
@@ -100,11 +80,8 @@ struct MutationInfo
 	const Document& prev;
 	const Document& cur;
 
-	MutationInfo(const Document& prev, const Document& cur)
-		: prev(prev),
-		  cur(cur)
-	{
-	}
+	std::vector<NodePtr> prevNodes;
+	std::vector<NodePtr> curNodes;
 };
 
 END_NAMESPACE(Core)

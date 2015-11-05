@@ -65,4 +65,6 @@ namespace Core
 	class Project;
 	class Document;
 	struct MutationInfo;
+
+	using tree_t = tree<NodePtr>;
 };
