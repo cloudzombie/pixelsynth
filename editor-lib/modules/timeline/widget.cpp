@@ -20,7 +20,7 @@ Widget::Widget(QWidget* parent)
 	tree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	tree_->setItemDelegateForColumn(1, new PropertyEditors::Delegate(tree_));
 
-	connect(static_cast<Application*>(qApp), &Application::projectMutated, [this, proxy](auto mutationInfo)
+	connect(static_cast<Application*>(qApp), &Application::projectMutated, this, [this, proxy](auto mutationInfo)
 	{
 		auto selection = proxy->mapSelectionToSource(tree_->selectionModel()->selection());
 		auto newSelection = model_->apply(mutationInfo, selection.indexes());

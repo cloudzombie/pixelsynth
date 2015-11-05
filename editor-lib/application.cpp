@@ -8,18 +8,15 @@ using Editor::MainWindow;
 Application::Application(int argc, char *argv[])
 	: QApplication(argc, argv)
 {
-	connect(this, &Application::projectChanged, [&]()
-	{
-		if (mainWindow_) mainWindow_->deleteLater();
-		mainWindow_ = new MainWindow(*this);
-	});
-
 	clear();
 }
 
 void Application::clear()
 {
+	if (mainWindow_) delete mainWindow_;
+
 	project_ = Project();
+	mainWindow_ = new MainWindow(*this);
 
 	project_.setMutationCallback([&](auto mutationInfo)
 	{

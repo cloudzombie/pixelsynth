@@ -86,7 +86,7 @@ void MainWindow::createMenu()
 	editMenu->addAction(actionUndo_);
 	editMenu->addAction(actionRedo_);
 
-	connect(&app_, &Application::projectMutated, [&](auto mutationInfo)
+	connect(&app_, &Application::projectMutated, this, [&](auto mutationInfo)
 	{
 		auto undoState = app_.project().undoState();
 		actionUndo_->setText(tr("&Undo") + " " + undoState.undoDescription.c_str());
