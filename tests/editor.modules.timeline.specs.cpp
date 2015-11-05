@@ -38,8 +38,9 @@ go_bandit([]() {
 				auto node = model->nodeFromIndex(nodeIndex);
 				LOG->debug("Asserting properties for node {}", Core::prop<std::string>(*node, "$Title", 0));
 
-				size_t propertyIndex = 0;
-				AssertThat(model->rowCount(nodeIndex), Equals(node->properties().size()));
+				// first rows are the child nodes, then the rest of the rows are the properties
+				size_t propertyIndex = p->current().childCount(*node);
+				AssertThat(model->rowCount(nodeIndex), Equals(node->properties().size() + propertyIndex));
 				for (auto& prop : node->properties())
 				{
 					AssertThat(model->propertyFromIndex(model->index(propertyIndex, 0, nodeIndex)), Equals(prop.get()));
@@ -159,6 +160,16 @@ go_bandit([]() {
 		{
 			p->applyMutationsTo(15);
 			assertProperties({ model->index(0, 0), model->index(1, 0), model->index(2, 0), model->index(3, 0) });
+		});
+	
+		it("has reparented nodes", [&]()
+		{
+			p->applyMutationsTo(27);
+			AssertThat(model->data(model->index(2, 0), Qt::DisplayRole).toString().toStdString(), Equals("c"));
+			AssertThat(model->data(model->index(0, 0, model->index(2, 0)), Qt::DisplayRole).toString().toStdString(), Equals("b"));
+			AssertThat(model->data(model->index(0, 0, model->index(0, 0, model->index(2, 0))), Qt::DisplayRole).toString().toStdString(), Equals("a"));
+
+			assertProperties({ model->index(2, 0), model->index(0, 0, model->index(2, 0)), model->index(0, 0, model->index(0, 0, model->index(2, 0))) });
 		});
 	});
 });

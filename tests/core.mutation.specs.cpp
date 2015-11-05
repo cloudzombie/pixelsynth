@@ -21,7 +21,7 @@ go_bandit([]() {
 			p = std::make_unique<MutationProject>();
 			p->setMutationCallback([&mutations](auto mutationInfo) { mutations.emplace_back(mutationInfo); });
 
-			p->applyMutationsTo(26);
+			p->applyMutationsTo(27);
 		});
 
 		it("should have emitted mutations", [&]()
@@ -196,6 +196,14 @@ go_bandit([]() {
 			AssertThat(mutation->nodes.size(), Equals(2));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->between_ab[24], ChangeType::Added, nullptr, p->root(), -1, 1)));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->between_ab2[24], ChangeType::Added, nullptr, p->root(), -1, 2)));
+		});
+
+		it("should propertly handle multiple reparentings", [&]()
+		{
+			auto mutation = mutations.at(27);
+			AssertThat(mutation->nodes.size(), Equals(2));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a[27], p->a[27], ChangeType::Mutated, p->root(), p->b[27], 0, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[27], p->b[27], ChangeType::Mutated, p->root(), p->c[27], 3, 0)));
 		});
 	});
 });

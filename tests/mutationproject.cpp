@@ -227,6 +227,14 @@ void MutationProject::applyMutation(size_t mutationIndex)
 		break;
 
 	case 27:
+		// 27 = in one call, reparent a under b, and b under c
+		this->mutate({
+			[&](auto& mut) { mut.reparent(b, { a }); },
+			[&](auto& mut) { mut.reparent(c, { b }); }
+		});
+		break;
+
+	case 28:
 		throw new std::logic_error("No more migrations");
 	}
 
