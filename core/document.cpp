@@ -250,6 +250,8 @@ void Builder::insertBefore(NodePtr before, std::initializer_list<NodePtr> nodes)
 	for (auto&& node : nodes)
 	{
 		impl_->nodes_.insert(beforePos, node);
+		auto nodePos = iteratorFor(impl_->nodes_, *node);
+		beforePos = nodePos;
 	}
 }
 
