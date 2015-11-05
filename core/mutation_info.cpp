@@ -47,7 +47,7 @@ void findAddedOrMutatedNodes(const MutationInfo& i, std::vector<Change<NodePtr>>
 		}
 		else
 		{
-			if (prevNode != curNode || i.prev.parent(*prevNode) != i.cur.parent(*curNode))
+			if (prevNode != curNode || i.prev.parent(*prevNode) != i.cur.parent(*curNode) || i.prev.childIndex(*prevNode) != i.cur.childIndex(*curNode))
 			{
 				// mutated
 				changes.emplace_back(Change<NodePtr>(prevNode, curNode, ChangeType::Mutated, i.prev.parent(*prevNode), i.cur.parent(*curNode), i.prev.childIndex(*prevNode), i.cur.childIndex(*curNode)));

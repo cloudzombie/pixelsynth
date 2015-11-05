@@ -269,6 +269,18 @@ void Builder::append(NodePtr parent, std::initializer_list<NodePtr> nodes) noexc
 	}
 }
 
+void Builder::moveAfter(NodePtr after, std::initializer_list<NodePtr> nodes) noexcept
+{
+	assert(after);
+	auto afterPos = iteratorFor(impl_->nodes_, *after);
+
+	for (auto&& node : nodes)
+	{
+		auto nodePos = iteratorFor(impl_->nodes_, *node);
+		impl_->nodes_.move_after(afterPos, nodePos);
+	}
+}
+
 void Builder::erase(std::initializer_list<NodePtr> nodes) noexcept
 {
 	for (auto&& node : nodes)

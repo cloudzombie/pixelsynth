@@ -13,6 +13,8 @@ void MutationProject::applyMutationsFromTo(size_t start, size_t end)
 
 void MutationProject::applyMutation(size_t mutationIndex)
 {
+	LOG->debug("Applying mutation {}", mutationIndex);
+
 	NodePtr a {}, b {}, c {};
 	if (mutationIndex > 0)
 	{
@@ -227,14 +229,47 @@ void MutationProject::applyMutation(size_t mutationIndex)
 		break;
 
 	case 27:
-		// 27 = in one call, reparent a under b, and b under c
-		this->mutate({
-			[&](auto& mut) { mut.reparent(b, { a }); },
-			[&](auto& mut) { mut.reparent(c, { b }); }
-		});
+		// 27 = in one call, reparent a under b, and c under a, and b under new node d, so: d --> b --> a --> c
+		{
+			auto d = makeNode(hash("TestNode"), "d");
+			this->mutate({
+				[&](auto& mut) { mut.reparent(b, { a }); },
+				[&](auto& mut) { mut.reparent(a, { c }); },
+				[&](auto& mut) { mut.append({ d }); } ,
+				[&](auto& mut) { mut.reparent(d, { b }); },
+			});
+		}
 		break;
 
 	case 28:
+		// 28 = undo 27
+		this->undo();
+		break;
+
+	case 29:
+		// 29 = remove between_ab / between_ab2
+		this->mutate({
+			[&](auto& mut) { mut.erase({ between_ab[28], between_ab2[28] }); }
+		});
+		break;
+
+	case 30:
+		// 30 = in one call, create d and move a below d
+		{
+			auto d = makeNode(hash("TestNode"), "d");
+			this->mutate({
+				[&](auto& mut) { mut.append({ d }); } ,
+				[&](auto& mut) { mut.moveAfter(d, { a }); }
+			});
+		}
+		break;
+
+	case 31:
+		// 31 = undo 30
+		this->undo();
+		break;
+
+	case 32:
 		throw new std::logic_error("No more migrations");
 	}
 
@@ -250,6 +285,7 @@ void MutationProject::applyMutation(size_t mutationIndex)
 	findHistory(this->a, { "a", "a!" });
 	findHistory(this->b, { "b" });
 	findHistory(this->c, { "c" });
+	findHistory(this->d, { "d" });
 	findHistory(this->between_ab, { "between_ab" });
 	findHistory(this->between_ab2, { "between_ab2" });
 }

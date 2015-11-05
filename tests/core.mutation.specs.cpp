@@ -21,7 +21,7 @@ go_bandit([]() {
 			p = std::make_unique<MutationProject>();
 			p->setMutationCallback([&mutations](auto mutationInfo) { mutations.emplace_back(mutationInfo); });
 
-			p->applyMutationsTo(27);
+			p->applyMutationsTo(31);
 		});
 
 		it("should have emitted mutations", [&]()
@@ -42,15 +42,17 @@ go_bandit([]() {
 		it("should emit removed nodes", [&]()
 		{
 			auto mutation = mutations.at(1);
-			AssertThat(mutation->nodes.size(), Equals(1));
+			AssertThat(mutation->nodes.size(), Equals(2));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[0], nullptr, ChangeType::Removed, p->root(), nullptr, 1, -1)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[0], p->c[0], ChangeType::Mutated, p->root(), p->root(), 2, 1)));
 		});
 
 		it("should emit nodes re-added after undo", [&]()
 		{
 			auto mutation = mutations.at(2);
-			AssertThat(mutation->nodes.size(), Equals(1));
+			AssertThat(mutation->nodes.size(), Equals(2));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->b[0], ChangeType::Added, nullptr, p->root(), -1, 1)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[0], p->c[0], ChangeType::Mutated, p->root(), p->root(), 1, 2)));
 		});
 
 		it("should emit changed properties", [&]()
@@ -104,17 +106,19 @@ go_bandit([]() {
 		it("should emit reparenting from root to lower", [&]()
 		{
 			auto mutation = mutations.at(8);
-			AssertThat(mutation->nodes.size(), Equals(2));
+			AssertThat(mutation->nodes.size(), Equals(3));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a[8], p->a[8], ChangeType::Mutated, p->root(), p->c[8], 0, 1)));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[8], p->b[8], ChangeType::Mutated, p->root(), p->c[8], 1, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[8], p->c[8], ChangeType::Mutated, p->root(), p->root(), 2, 0)));
 		});
 
 		it("should emit reparenting from lower to root", [&]()
 		{
 			auto mutation = mutations.at(9);
-			AssertThat(mutation->nodes.size(), Equals(2));
+			AssertThat(mutation->nodes.size(), Equals(3));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a[8], p->a[8], ChangeType::Mutated, p->c[8], p->root(), 1, 0)));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[8], p->b[8], ChangeType::Mutated, p->c[8], p->root(), 0, 1)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[8], p->c[8], ChangeType::Mutated, p->root(), p->root(), 0, 2)));
 		});
 
 		it("should emit setting a property to animated", [&]()
@@ -138,8 +142,10 @@ go_bandit([]() {
 		it("should emit inserting nodes", [&]()
 		{
 			auto mutation = mutations.at(12);
-			AssertThat(mutation->nodes.size(), Equals(1));
+			AssertThat(mutation->nodes.size(), Equals(3));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->between_ab[12], ChangeType::Added, nullptr, p->root(), -1, 1)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[12], p->b[12], ChangeType::Mutated, p->root(), p->root(), 1, 2)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[12], p->c[12], ChangeType::Mutated, p->root(), p->root(), 2, 3)));
 		});
 	
 		it("should emit added properties", [&]()
@@ -165,45 +171,78 @@ go_bandit([]() {
 		it("should emit reparenting from root to lower on multiple levels", [&]()
 		{
 			auto mutation = mutations.at(18);
-			AssertThat(mutation->nodes.size(), Equals(1));
+			AssertThat(mutation->nodes.size(), Equals(2));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[8], p->b[17], ChangeType::Mutated, p->root(), p->a[17], 1, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[18], p->c[18], ChangeType::Mutated, p->root(), p->root(), 2, 1)));
 
 			mutation = mutations.at(19);
-			AssertThat(mutation->nodes.size(), Equals(1));
+			AssertThat(mutation->nodes.size(), Equals(2));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a[17], p->a[18], ChangeType::Mutated, p->root(), p->c[17], 0, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[18], p->c[18], ChangeType::Mutated, p->root(), p->root(), 1, 0)));
 		});
 
 		it("should properly undo/redo reparenting", [&]()
 		{
 			auto mutation = mutations.at(21);
-			AssertThat(mutation->nodes.size(), Equals(1));
+			AssertThat(mutation->nodes.size(), Equals(2));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a[17], p->a[18], ChangeType::Mutated, p->root(), p->c[17], 0, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[18], p->c[18], ChangeType::Mutated, p->root(), p->root(), 1, 0)));
 		});
 
 		it("should properly undo/redo multiple mutations", [&]()
 		{
 			auto mutation = mutations.at(24);
-			AssertThat(mutation->nodes.size(), Equals(2));
+			AssertThat(mutation->nodes.size(), Equals(4));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->between_ab[24], ChangeType::Added, nullptr, p->root(), -1, 1)));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->between_ab2[24], ChangeType::Added, nullptr, p->root(), -1, 2)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[24], p->b[24], ChangeType::Mutated, p->root(), p->root(), 1, 3)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[24], p->c[24], ChangeType::Mutated, p->root(), p->root(), 2, 4)));
 
 			mutation = mutations.at(25);
-			AssertThat(mutation->nodes.size(), Equals(2));
+			AssertThat(mutation->nodes.size(), Equals(4));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->between_ab[24], nullptr, ChangeType::Removed, p->root(), nullptr, 1, -1)));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->between_ab2[24], nullptr, ChangeType::Removed, p->root(), nullptr, 2, -1)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[24], p->b[24], ChangeType::Mutated, p->root(), p->root(), 3, 1)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[24], p->c[24], ChangeType::Mutated, p->root(), p->root(), 4, 2)));
 
 			mutation = mutations.at(26);
-			AssertThat(mutation->nodes.size(), Equals(2));
+			AssertThat(mutation->nodes.size(), Equals(4));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->between_ab[24], ChangeType::Added, nullptr, p->root(), -1, 1)));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->between_ab2[24], ChangeType::Added, nullptr, p->root(), -1, 2)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[24], p->b[24], ChangeType::Mutated, p->root(), p->root(), 1, 3)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[24], p->c[24], ChangeType::Mutated, p->root(), p->root(), 2, 4)));
 		});
 
 		it("should propertly handle multiple reparentings", [&]()
 		{
 			auto mutation = mutations.at(27);
-			AssertThat(mutation->nodes.size(), Equals(2));
+			AssertThat(mutation->nodes.size(), Equals(6));
 			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a[27], p->a[27], ChangeType::Mutated, p->root(), p->b[27], 0, 0)));
-			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[27], p->b[27], ChangeType::Mutated, p->root(), p->c[27], 3, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[27], p->c[27], ChangeType::Mutated, p->root(), p->a[27], 4, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[27], p->b[27], ChangeType::Mutated, p->root(), p->d[27], 3, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->d[27], ChangeType::Added, nullptr, p->root(), -1, 2)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->between_ab[27], p->between_ab[24], ChangeType::Mutated, p->root(), p->root(), 1, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->between_ab2[27], p->between_ab2[24], ChangeType::Mutated, p->root(), p->root(), 2, 1)));
+		});
+
+		it("should propertly handle insert + move", [&]()
+		{
+			auto mutation = mutations.at(30);
+			AssertThat(mutation->nodes.size(), Equals(4));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a[30], p->a[30], ChangeType::Mutated, p->root(), p->root(), 0, 3)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[30], p->b[30], ChangeType::Mutated, p->root(), p->root(), 1, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[30], p->c[30], ChangeType::Mutated, p->root(), p->root(), 2, 1)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(nullptr, p->d[30], ChangeType::Added, nullptr, p->root(), -1, 2)));
+		});
+
+		it("should propertly undo insert + move", [&]()
+		{
+			auto mutation = mutations.at(31);
+			AssertThat(mutation->nodes.size(), Equals(4));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->a[30], p->a[30], ChangeType::Mutated, p->root(), p->root(), 3, 0)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->b[30], p->b[30], ChangeType::Mutated, p->root(), p->root(), 0, 1)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->c[30], p->c[30], ChangeType::Mutated, p->root(), p->root(), 1, 2)));
+			AssertThat(mutation->nodes, Contains(Change<NodePtr>(p->d[30], nullptr, ChangeType::Removed, p->root(), nullptr, 2, -1)));
 		});
 	});
 });

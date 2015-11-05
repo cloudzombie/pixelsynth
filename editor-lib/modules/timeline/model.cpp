@@ -285,7 +285,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		else parent->appendRow(items);
 	};
 
-	auto applyMutations = [&](auto& changes, RowType rowType, auto createItems)
+	auto applyMutations = [&](auto& changes, RowType rowType, auto createItems, bool onlyRemove)
 	{
 		for (auto&& mut : changes)
 		{
@@ -298,12 +298,14 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 			{
 			case ChangeType::Added:
 			{
+				if (onlyRemove) continue;
 				LOG->debug("Adding at position {}: {}", mut.curIndex, *mut.cur);
 				setRow(curParentNode, mut.curIndex, createItems(mut.cur.get()), rowType);
 				break;
 			}
 			case ChangeType::Removed:
 			{
+				if (!onlyRemove) continue;
 				auto item = findItem(mut.prev.get());
 				if (!item) continue; // maybe was already deleted when parent was removed
 				auto childIndex = findChildIndex(prevParentNode, item);
@@ -313,11 +315,12 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 			}
 			case ChangeType::Mutated:
 			{
+				if (onlyRemove) continue;
 				if (!prevParentNode) prevParentNode = curParentNode;
 				else if (!curParentNode) curParentNode = prevParentNode;
 				assert(prevParentNode && curParentNode);
 
-				LOG->debug("Mutating to position {}: {}", mut.curIndex, *mut.cur);
+				LOG->debug("Mutating from position {} to position {}: {}", mut.prevIndex, mut.curIndex, *mut.cur);
 				auto item = findItem(resolve(mut.prev.get()));
 				assert(item);
 				auto prevIndex = findChildIndex(prevParentNode, item);
@@ -333,19 +336,23 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		}
 	};
 
-	applyMutations(mutation->nodes, RowType::Node, [&](const Node* node)
+	auto createNodeItems = [&](const Node* node)
 	{
 		QList<QStandardItem*> items;
 		items << new ModelItem(node) << nullptr;
 		return items;
-	});
-	applyMutations(mutation->properties, RowType::Property, [&](const Property* prop)
+	};
+	auto createPropertyItems = [&](const Property* prop)
 	{
 		QList<QStandardItem*> items;
 		auto modelItem = new ModelItem(prop);
 		items << modelItem << modelItem->propertyValueItem();
 		return items;
-	});
+	};
+	applyMutations(mutation->nodes, RowType::Node, createNodeItems, false);
+	applyMutations(mutation->properties, RowType::Property, createPropertyItems, false);
+	applyMutations(mutation->nodes, RowType::Node, createNodeItems, true);
+	applyMutations(mutation->properties, RowType::Property, createPropertyItems, true);
 
 	// Generate new selection indices, perhaps based on mutated nodes
 	QModelIndexList newSelection;
