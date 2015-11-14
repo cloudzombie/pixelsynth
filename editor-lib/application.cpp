@@ -9,6 +9,12 @@ using Editor::Application;
 Application::Application(int argc, char *argv[])
 	: QApplication(argc, argv)
 {
+	Q_INIT_RESOURCE(style);
+	QFile f(":qdarkstyle/style.qss");
+	f.open(QFile::ReadOnly | QFile::Text);
+	QTextStream ts(&f);
+	setStyleSheet(ts.readAll());
+
 	registerModules();
 	setup();
 }
