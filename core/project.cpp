@@ -36,7 +36,7 @@ void Project::redo() noexcept
 
 Project::UndoState Project::undoState() const noexcept
 {
-	auto canUndo = history_.size() > 2; // first document is creating root, so there should at least be a second document to undo to
+	auto canUndo = history_.size() > 1; // first document is creating root, so there should at least be a second document to undo to
 	auto canRedo = !redoStack_.empty();
 
 	return {
