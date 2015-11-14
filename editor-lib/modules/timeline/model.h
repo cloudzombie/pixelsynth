@@ -6,6 +6,7 @@ BEGIN_NAMESPACE(Editor) BEGIN_NAMESPACE(Modules) BEGIN_NAMESPACE(Timeline)
 
 class Model: public QStandardItemModel
 {
+	Q_OBJECT
 	class ModelItem;
 
 public:
@@ -19,6 +20,11 @@ public:
 
 	// Converts the property value on that index into a QVariant and back again, used for testing purposes
 	Core::PropertyValue roundTripPropertyValueFromIndex(const QModelIndex& index) const noexcept;
+
+	void emitPropertyChanged(const Core::Property* prop, Core::PropertyValue newValue) const noexcept;
+
+signals:
+	void propertyChanged(const Core::Property* prop, Core::PropertyValue newValue) const;
 
 private:
 	static int findChildIndex(QStandardItem* parent, ModelItem* item) noexcept;

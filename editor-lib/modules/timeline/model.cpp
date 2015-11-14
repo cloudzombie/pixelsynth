@@ -1,6 +1,5 @@
 #include "model.h"
 
-#include <editor-lib/application.h>
 #include <core/mutation_info.h>
 #include <core/utils.h>
 
@@ -76,8 +75,9 @@ template <> PropertyValue EditRoleAsPropertyValue::operator()<std::string>(const
 class PropertyValueItem: public QStandardItem
 {
 public:
-	explicit PropertyValueItem(const Property* prop)
-		: prop_(prop)
+	explicit PropertyValueItem(const Model* model, const Property* prop)
+		: model_(model)
+		, prop_(prop)
 	{
 		setFlags(Qt::ItemIsSelectable | Qt::ItemIsEditable | Qt::ItemIsEnabled);
 		LOG->debug("Creating PropertyValueItem for {}", *prop);
@@ -113,28 +113,14 @@ private:
 	{
 		if (role != Qt::EditRole)
 		{
-			QStandardItem::setData(value, role);
-			return;
+			return QStandardItem::setData(value, role);
 		}
 
-		auto& project = static_cast<Editor::Application*>(qApp)->project();
-		auto& document = project.current();
-
-		project.mutate([&](Core::Document::Builder& mut)
-		{
-			auto&& parent = document.parent(*prop_);
-			assert(parent);
-			mut.mutate(parent, [&](Node::Builder& node)
-			{
-				node.mutateProperty(Core::hash(prop_->metadata().title().c_str()), [&](Property::Builder& prop)
-				{
-					prop.set(0, apply(EditRoleAsPropertyValue(value), prop_->getPropertyValue(0)));
-				});
-			});
-		});
+		model_->emitPropertyChanged(prop_, apply(EditRoleAsPropertyValue(value), prop_->getPropertyValue(0)));
 	}
 
-	const Property* prop_ {};
+	const Model* model_;
+	const Property* prop_;
 };
 
 ///
@@ -149,9 +135,9 @@ public:
 		update(node);
 	}
 
-	explicit ModelItem(const Property* prop)
+	explicit ModelItem(const Model* model, const Property* prop)
 		: prop_(prop)
-		, propertyValueItem_(new PropertyValueItem(prop_))
+		, propertyValueItem_(new PropertyValueItem(model, prop_))
 	{
 		setFlags(flags_);
 		update(prop);
@@ -345,7 +331,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 	auto createPropertyItems = [&](const Property* prop)
 	{
 		QList<QStandardItem*> items;
-		auto modelItem = new ModelItem(prop);
+		auto modelItem = new ModelItem(this, prop);
 		items << modelItem << modelItem->propertyValueItem();
 		return items;
 	};
@@ -416,4 +402,9 @@ PropertyValue Model::roundTripPropertyValueFromIndex(const QModelIndex& index) c
 {
 	auto item = static_cast<PropertyValueItem*>(itemFromIndex(index));
 	return item->roundTrip();
+}
+
+void Model::emitPropertyChanged(const Property* prop, PropertyValue newValue) const noexcept
+{
+	emit propertyChanged(prop, newValue);
 }

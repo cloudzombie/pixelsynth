@@ -3,38 +3,52 @@
 #include "../property_editors/delegate.h"
 
 #include <core/utils.h>
-#include <editor-lib/application.h>
 
 using Editor::Modules::Timeline::Widget;
 
 using namespace Core;
 
-Widget::Widget(QWidget* parent)
+Widget::Widget(QWidget* parent, Project& project)
 	: QDockWidget(parent)
+	, project_(project)
 	, tree_(new QTreeView(this))
 	, model_(std::make_shared<Model>())
 {
 	setWindowTitle(tr("Timeline"));
 	setWidget(tree_);
 
-	auto proxy = new QSortFilterProxyModel(this);
-	proxy->setSourceModel(model_.get());
-	tree_->setModel(proxy);
+	proxy_ = new QSortFilterProxyModel(this);
+	proxy_->setSourceModel(model_.get());
+	tree_->setModel(proxy_);
 	tree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	tree_->setItemDelegateForColumn(1, new PropertyEditors::Delegate(tree_));
 
-	connect(static_cast<Application*>(qApp), &Application::projectMutated, this, [this, proxy](auto mutationInfo)
+	connect(model_.get(), &Model::propertyChanged, this, [&](const Property* prop, PropertyValue value)
 	{
-		auto selection = proxy->mapSelectionToSource(tree_->selectionModel()->selection());
-		auto newSelection = model_->apply(mutationInfo, selection.indexes());
-		tree_->selectionModel()->clear();
-		for (auto&& item: newSelection) tree_->selectionModel()->select(proxy->mapFromSource(item), QItemSelectionModel::Select);
+		project.mutate([&](Document::Builder& mut)
+		{
+			mut.mutate(project.current().parent(*prop), [&](Node::Builder& node)
+			{
+				node.mutateProperty(hash(prop->metadata().title().c_str()), [&](Property::Builder& p)
+				{
+					p.set(0, value);
+				});
+			});
+		}, "edit " + prop->metadata().title());
 	});
+}
+
+void Widget::projectMutated(std::shared_ptr<MutationInfo> mutationInfo) const
+{
+	auto selection = proxy_->mapSelectionToSource(tree_->selectionModel()->selection());
+	auto newSelection = model_->apply(mutationInfo, selection.indexes());
+	tree_->selectionModel()->clear();
+	for (auto&& item : newSelection) tree_->selectionModel()->select(proxy_->mapFromSource(item), QItemSelectionModel::Select);
 }
 
 void Widget::mutate()
 {
-	auto& p = static_cast<Application*>(qApp)->project();
+	auto&& p = project_;
 	switch (mutationIndex++)
 	{
 	case 0:

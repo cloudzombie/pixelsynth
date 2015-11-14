@@ -12,7 +12,7 @@ Editor::Actions::Actions(QObject* app)
 	saveFileAs->setShortcuts(QKeySequence::SaveAs);
 
 	exit = new QAction(app->tr("E&xit"), app);
-	exit->setShortcuts(QKeySequence::Quit);
+	exit->setShortcuts({ QKeySequence(app->tr("Alt+F4")) });
 
 	undo = new QAction(app->tr("&Undo"), app);
 	undo->setEnabled(false);

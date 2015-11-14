@@ -3,35 +3,45 @@
 
 BEGIN_NAMESPACE(Editor) BEGIN_NAMESPACE(Modules)
 
-class Metadata
+struct Metadata
 {
-	using create_widget_t = std::function<QWidget*(QWidget*)>;
-	using action_list_t = std::vector<std::pair<QAction*, QAction*>>;
+	// Creates a widget for (1) app, with (2) parent widget and (3) the project, returns (4) widget
+	using create_widget_t = std::function<QWidget*(QObject*, QWidget*, Core::Project&)>;
 
-	struct Impl;
+	// Creates an action for (1) app, related to (4) widget
+	template <typename T>
+	using create_action_t = std::function<QAction*(QObject*, T*)>;
 
-public:
-	create_widget_t& createWidget() const;
-	Qt::DockWidgetArea dockWidgetArea() const;
-	action_list_t& actions() const;
+	using action_list_t = std::vector<std::pair<create_action_t<QWidget>, QString>>;
 
-	class Builder
+	void setWidget(create_widget_t fn)
 	{
-	public:
-		Builder();
-		Builder& withCreateWidget(create_widget_t fn);
-		Builder& withDockWidgetArea(Qt::DockWidgetArea area);
-		Builder& withAction(QAction* action, QAction* before);
-		std::unique_ptr<Metadata> build() noexcept;
+		createWidget_ = fn;
+	}
 
-		std::shared_ptr<Impl> impl_;
-		friend class Metadata;
-	};
+	void setDockWidgetArea(Qt::DockWidgetArea dockWidgetArea)
+	{
+		dockWidgetArea_ = dockWidgetArea;
+	}
+
+	template <typename T>
+	void addAction(create_action_t<T> fn, QString before)
+	{
+		auto wrappedFn = [=](QObject* app, QWidget* widget)
+		{
+			return fn(app, qobject_cast<T*>(widget));
+		};
+		actions_.emplace_back(std::make_pair(wrappedFn, before));
+	}
+
+	create_widget_t createWidget() const { return createWidget_; }
+	Qt::DockWidgetArea dockWidgetArea() const { return dockWidgetArea_; }
+	action_list_t actions() const { return actions_; }
 
 private:
-	Metadata(Builder&& rhs);
-
-	std::shared_ptr<Impl> impl_;
+	create_widget_t createWidget_ {};
+	Qt::DockWidgetArea dockWidgetArea_ { Qt::BottomDockWidgetArea };
+	action_list_t actions_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules)

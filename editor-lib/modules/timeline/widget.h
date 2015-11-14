@@ -10,11 +10,18 @@ class Widget: public QDockWidget
 	Q_OBJECT
 
 public:
-	Widget(QWidget* parent);
+	Widget(QWidget* parent, Core::Project& project);
 	void mutate();
 
+	const Model& model() const { return *model_.get(); }
+
+public slots:
+	void projectMutated(std::shared_ptr<Core::MutationInfo> mutationInfo) const;
+
 private:
+	Core::Project& project_;
 	QTreeView* tree_;
+	QSortFilterProxyModel* proxy_;
 	std::shared_ptr<Model> model_;
 	size_t mutationIndex {};
 };

@@ -1,6 +1,5 @@
 #include "application.h"
 #include "actions.h"
-
 #include "modules/timeline/module.h"
 
 using Core::Project;
@@ -9,32 +8,68 @@ using Editor::Application;
 
 Application::Application(int argc, char *argv[])
 	: QApplication(argc, argv)
-	, actions_(std::make_shared<Actions>(this))
 {
 	registerModules();
-	connectActions();
-
-	clear();
+	setup();
 }
 
 void Application::registerModules()
 {
-	moduleMetadata_.insert(move(Modules::Timeline::registerModule()));
+	moduleMetadata_.emplace_back(Modules::Timeline::registerModule());
 }
 
 void Application::applyModules()
 {
 	for (auto&& metadata: moduleMetadata_)
 	{
-		auto widget = metadata->createWidget()(mainWindow_);
-		if (metadata->dockWidgetArea() == Qt::NoDockWidgetArea) mainWindow_->setCentralWidget(widget);
-		else mainWindow_->addDockWidget(metadata->dockWidgetArea(), qobject_cast<QDockWidget*>(widget));
+		auto widget = metadata.createWidget()(this, mainWindow_, project_);
+		if (metadata.dockWidgetArea() == Qt::NoDockWidgetArea) mainWindow_->setCentralWidget(widget);
+		else mainWindow_->addDockWidget(metadata.dockWidgetArea(), qobject_cast<QDockWidget*>(widget));
+
+		auto&& src = metadata.actions();
+		Modules::Metadata::action_list_t reversed_actions(src.size());
+		reverse_copy(begin(src), end(src), begin(reversed_actions));
+		for (auto&& actionPair: reversed_actions)
+		{
+			auto actionFn = actionPair.first;
+			auto action = actionFn(this, widget);
+			addActionAfter(actionPair.second, action);
+		}
 	}
+}
+
+void Application::addActionAfter(QString existingActionText, QAction* actionToAdd) const
+{
+	for (auto&& menuChild: mainWindow_->menuBar()->children())
+	{
+		auto menu = qobject_cast<QMenu*>(menuChild);
+		if (!menu) continue;
+
+		for (auto t = 0; t < menu->actions().size();t++)
+		{
+			auto action = menu->actions()[t];
+			if (action->text() == existingActionText)
+			{
+				if (t + 1 < menu->actions().size())
+				{
+					auto after = menu->actions()[t + 1];
+					menu->insertAction(after, actionToAdd);
+				}
+				else
+				{
+					menu->addAction(actionToAdd);
+				}
+				return;
+			};
+		}
+	}
+
+	throw new std::logic_error("Could not add menu item");
 }
 
 void Application::connectActions()
 {
-	connect(actions_->newFile, &QAction::triggered, this, &Application::clear);
+	connect(actions_->newFile, &QAction::triggered, this, &Application::setup);
 	connect(actions_->openFile, &QAction::triggered, this, &Application::openFile);
 	connect(actions_->saveFileAs, &QAction::triggered, this, &Application::saveFileAs);
 	connect(actions_->exit, &QAction::triggered, this, &Application::quit);
@@ -66,13 +101,16 @@ void Application::fillMenu(QMenuBar* menu) const
 	editMenu->addAction(actions_->redo);
 }
 
-void Application::clear()
+void Application::setup()
 {
 	if (mainWindow_) mainWindow_->deleteLater();
 
 	project_ = Project();
 	mainWindow_ = new QMainWindow();
+
+	actions_ = std::make_shared<Actions>(this);
 	fillMenu(mainWindow_->menuBar());
+	connectActions();
 	applyModules();
 
 	mainWindow_->showMaximized();
@@ -110,7 +148,7 @@ void Application::load(QString filename)
 
 	QString contents = file.readAll();
 
-	clear();
+	setup();
 	auto emptyDocument = project_.current();
 
 	{

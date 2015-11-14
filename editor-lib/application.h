@@ -24,10 +24,13 @@ signals:
 private:
 	void registerModules();
 	void applyModules();
+
+	void addActionAfter(QString existingActionText, QAction* actionToAdd) const;
+
 	void connectActions();
 	void fillMenu(QMenuBar* menu) const;
 
-	void clear();
+	void setup();
 	void load(QString filename);
 	void save(QString filename);
 
@@ -38,7 +41,7 @@ private:
 	QMainWindow* mainWindow_ {};
 	std::shared_ptr<Actions> actions_;
 
-	std::set<std::unique_ptr<Modules::Metadata>> moduleMetadata_;
+	std::deque<Modules::Metadata> moduleMetadata_;
 };
 
 END_NAMESPACE(Editor)
