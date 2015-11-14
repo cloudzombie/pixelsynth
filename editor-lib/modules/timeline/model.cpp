@@ -97,6 +97,8 @@ public:
 			return apply(PropertyValueAsDisplayRole(), prop_->getPropertyValue(0));
 		case Qt::EditRole:
 			return apply(PropertyValueAsEditRole(), prop_->getPropertyValue(0));
+		case Qt::SizeHintRole:
+			return QSize(0, 24);
 		default:
 			return QStandardItem::data(role);
 		}
