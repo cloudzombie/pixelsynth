@@ -21,7 +21,7 @@ go_bandit([]() {
 			p = std::make_unique<MutationProject>();
 			p->setMutationCallback([&mutations](auto mutationInfo) { mutations.emplace_back(mutationInfo); });
 
-			p->applyMutationsTo(31);
+			p->applyMutationsTo(MutationProject::NUM_MUTATIONS - 1);
 		});
 
 		it("should have emitted mutations", [&]()

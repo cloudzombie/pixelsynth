@@ -147,6 +147,15 @@ Core::tree_t::iterator Document::iteratorFor(const Core::tree_t& tree, const Nod
 	return it;
 }
 
+#ifdef _DEBUG
+#include <tree/tree_util.h>
+
+void Document::dumpTree() const
+{
+	print_tree_bracketed(impl_->nodes_);
+}
+#endif
+
 /////////////////////////////////////////////////////////
 // Builder boilerplate
 /////////////////////////////////////////////////////////
@@ -307,6 +316,9 @@ void Builder::reparent(NodePtr parent, std::initializer_list<NodePtr> nodes) noe
 	{
 		auto it = iteratorFor(impl_->nodes_, *node);
 		impl_->nodes_.reparent(parentPos, it, impl_->nodes_.next_sibling(it));
+
+		// Sanity check
+		assert((*tree_t::parent(it)).get() == parent.get());
 	}
 }
 

@@ -81,6 +81,10 @@ public:
 
 	static Document buildRootDocument(NodePtr root) noexcept;
 
+#ifdef _DEBUG
+	void dumpTree() const;
+#endif
+
 private:
 	friend class cereal::access;
 	template<class Archive> void save(Archive& archive) const;

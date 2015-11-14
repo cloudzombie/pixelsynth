@@ -15,12 +15,13 @@ void MutationProject::applyMutation(size_t mutationIndex)
 {
 	LOG->debug("Applying mutation {}", mutationIndex);
 
-	NodePtr a {}, b {}, c {};
+	NodePtr a {}, b {}, c {}, d {};
 	if (mutationIndex > 0)
 	{
 		a = this->a[mutationIndex - 1];
 		b = this->b[mutationIndex - 1];
 		c = this->c[mutationIndex - 1];
+		d = this->d[mutationIndex - 1];
 	}
 
 	switch (mutationIndex)
@@ -256,9 +257,8 @@ void MutationProject::applyMutation(size_t mutationIndex)
 	case 30:
 		// 30 = in one call, create d and move b + a below d
 		{
-			auto d = makeNode(hash("TestNode"), "d");
 			this->mutate({
-				[&](auto& mut) { mut.append({ d }); } ,
+				[&](auto& mut) { d = makeNode(hash("TestNode"), "d"); mut.append({ d }); },
 				[&](auto& mut) { mut.moveAfter(d, { b, a }); }
 			});
 		}
@@ -269,7 +269,7 @@ void MutationProject::applyMutation(size_t mutationIndex)
 		this->undo();
 		break;
 
-	case 32:
+	case NUM_MUTATIONS:
 		throw new std::logic_error("No more migrations");
 	}
 

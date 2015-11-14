@@ -3,6 +3,8 @@
 
 struct MutationProject: Core::Project
 {
+	static const size_t NUM_MUTATIONS = 32;
+
 	void applyMutationsTo(size_t maxMutation);
 	void applyMutation(size_t mutationIndex);
 	void applyMutationsFromTo(size_t start, size_t end);
