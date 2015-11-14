@@ -5,7 +5,7 @@ BEGIN_NAMESPACE(Editor) BEGIN_NAMESPACE(Modules) BEGIN_NAMESPACE(Timeline)
 
 class Model;
 
-class Widget: public QWidget
+class Widget: public QDockWidget
 {
 	Q_OBJECT
 

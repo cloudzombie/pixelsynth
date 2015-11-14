@@ -10,10 +10,13 @@ using Editor::Modules::Timeline::Widget;
 using namespace Core;
 
 Widget::Widget(QWidget* parent)
-	: QWidget(parent)
+	: QDockWidget(parent)
 	, tree_(new QTreeView(this))
 	, model_(std::make_shared<Model>())
 {
+	setWindowTitle(tr("Timeline"));
+	setWidget(tree_);
+
 	auto proxy = new QSortFilterProxyModel(this);
 	proxy->setSourceModel(model_.get());
 	tree_->setModel(proxy);
@@ -38,7 +41,7 @@ void Widget::mutate()
 		p.mutate([&](auto& mut)
 		{
 			mut.append({ makeNode(hash("DummyNode"), "a") });
-		});
+		}, "create node");
 		break;
 	case 1:
 		p.mutate({
