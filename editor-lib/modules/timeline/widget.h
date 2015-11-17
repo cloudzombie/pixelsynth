@@ -19,8 +19,15 @@ public slots:
 	void projectMutated(std::shared_ptr<Core::MutationInfo> mutationInfo) const;
 
 private:
+	void updateItemWidgets(QStandardItem* parent) const;
+	void syncVerticalScrollBars(int value) const;
+
 	Core::Project& project_;
+	QWidget* container_;
+	QGridLayout* layout_;
 	QTreeView* tree_;
+	QSplitter* splitter_;
+	QTreeView* keyframer_;
 	QSortFilterProxyModel* proxy_;
 	std::shared_ptr<Model> model_;
 	size_t mutationIndex {};

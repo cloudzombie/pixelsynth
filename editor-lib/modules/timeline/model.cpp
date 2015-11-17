@@ -10,8 +10,6 @@ using Core::Property;
 using Core::PropertyValue;
 using Core::Uuid;
 
-const size_t ModelItemDataRole = Qt::UserRole;
-
 ///
 
 struct PropertyValueAsEditRole
@@ -130,34 +128,51 @@ private:
 class Model::ModelItem: public QStandardItem
 {
 public:
-	explicit ModelItem(const Node* node)
-		: node_(node)
+	explicit ModelItem(const Model* model, const Node* node)
+		: model_(model)
 	{
 		setFlags(flags_);
 		update(node);
 	}
 
 	explicit ModelItem(const Model* model, const Property* prop)
-		: prop_(prop)
+		: model_(model)
 		, propertyValueItem_(new PropertyValueItem(model, prop_))
 	{
 		setFlags(flags_);
 		update(prop);
 	}
 
+	QVariant data(int role) const override
+	{
+		switch (role)
+		{
+		case Qt::SizeHintRole:
+			return QSize(0, 24);
+		default:
+			return QStandardItem::data(role);
+		}
+	}
+
 	void update(const Node* node)
 	{
+		auto prev = node_;
 		node_ = node;
-		setData(QVariant::fromValue<void*>(const_cast<void*>(static_cast<const void*>(node_))), ModelItemDataRole);
+		setData(QVariant::fromValue<void*>(const_cast<void*>(static_cast<const void*>(node_))), static_cast<int>(ModelItemRoles::Data));
+		setData(QVariant::fromValue<int>(static_cast<int>(ModelItemDataType::Node)), static_cast<int>(ModelItemRoles::Type));
 		setData(Core::prop<std::string>(*node, "$Title", 0).c_str(), Qt::DisplayRole);
+		emit model_->modelItemNodeMutated(prev, node);
 	}
 
 	void update(const Property* prop)
 	{
+		auto prev = prop_;
 		prop_ = prop;
-		setData(QVariant::fromValue<void*>(const_cast<void*>(static_cast<const void*>(prop_))), ModelItemDataRole);
+		setData(QVariant::fromValue<void*>(const_cast<void*>(static_cast<const void*>(prop_))), static_cast<int>(ModelItemRoles::Data));
+		setData(QVariant::fromValue<int>(static_cast<int>(ModelItemDataType::Property)), static_cast<int>(ModelItemRoles::Type));
 		setData(prop->metadata().title().c_str(), Qt::DisplayRole);
 		propertyValueItem_->update(prop);
+		emit model_->modelItemPropertyMutated(prev, prop);
 	}
 
 	const Node* node() const { return node_; }
@@ -166,17 +181,18 @@ public:
 
 	static const Node* node(QStandardItem* item)
 	{
-		if (item->data(ModelItemDataRole) == QVariant()) return nullptr;
+		if (item->data(static_cast<int>(ModelItemRoles::Data)) == QVariant()) return nullptr;
 		return reinterpret_cast<ModelItem*>(item)->node_;
 	}
 
 	static const Property* prop(QStandardItem* item)
 	{
-		if (item->data(ModelItemDataRole) == QVariant()) return nullptr;
+		if (item->data(static_cast<int>(ModelItemRoles::Data)) == QVariant()) return nullptr;
 		return reinterpret_cast<ModelItem*>(item)->prop_;
 	}
 
 private:
+	const Model* model_;
 	const Node* node_ {};
 	const Property* prop_ {};
 	PropertyValueItem* propertyValueItem_ {};
@@ -204,8 +220,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		{
 			if (mut.type != ChangeType::Mutated) continue;
 
-			auto item = findItem(mut.prev.get());
-			item->update(mut.cur.get());
+			findItem(mut.prev.get())->update(mut.cur.get());
 			mutated.insert({ mut.prev.get(), mut.cur.get() });
 		}
 	};
@@ -327,7 +342,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 	auto createNodeItems = [&](const Node* node)
 	{
 		QList<QStandardItem*> items;
-		items << new ModelItem(node) << nullptr;
+		items << new ModelItem(this, node) << nullptr;
 		return items;
 	};
 	auto createPropertyItems = [&](const Property* prop)
@@ -356,9 +371,9 @@ QVariant Model::headerData(int section, Qt::Orientation orientation, int role) c
 	{
 		switch (section)
 		{
-		case 0:
-			return "Name";
-		case 1:
+		case Columns::Item:
+			return "Item";
+		case Columns::Value:
 			return "Value";
 		default:
 			return "Unknown";
@@ -380,14 +395,15 @@ int Model::findChildIndex(QStandardItem* parent, ModelItem* item) noexcept
 
 Model::ModelItem* Model::findItem(const void* ptr) const noexcept
 {
-	auto result = match(
+	auto results = match(
 		index(0, 0),
-		ModelItemDataRole,
+		static_cast<int>(ModelItemRoles::Data),
 		QVariant::fromValue(const_cast<void*>(ptr)),
 		1,
 		Qt::MatchRecursive);
-	if (result.isEmpty()) return nullptr;
-	return static_cast<ModelItem*>(itemFromIndex(result.at(0)));
+
+	if (results.isEmpty()) return nullptr;
+	return static_cast<ModelItem*>(itemFromIndex(results.at(0)));
 }
 
 const Node* Model::nodeFromIndex(const QModelIndex& index) const noexcept

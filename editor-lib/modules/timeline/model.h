@@ -10,6 +10,18 @@ class Model: public QStandardItemModel
 	class ModelItem;
 
 public:
+	enum class ModelItemDataType { Node, Property };
+	enum class ModelItemRoles
+	{
+		Data = Qt::UserRole,
+		Type = Data + 1
+	};
+	enum class Columns
+	{
+		Item,
+		Value
+	};
+
 	Model();
 
 	QModelIndexList apply(std::shared_ptr<Core::MutationInfo> mutation, const QModelIndexList& oldSelection) noexcept;
@@ -25,6 +37,8 @@ public:
 
 signals:
 	void propertyChanged(const Core::Property* prop, Core::PropertyValue newValue) const;
+	void modelItemNodeMutated(const Core::Node* prevNode, const Core::Node* curNode) const;
+	void modelItemPropertyMutated(const Core::Property* prevProp, const Core::Property* curProp) const;
 
 private:
 	static int findChildIndex(QStandardItem* parent, ModelItem* item) noexcept;

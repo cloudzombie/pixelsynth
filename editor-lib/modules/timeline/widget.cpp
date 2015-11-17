@@ -1,5 +1,6 @@
 #include "widget.h"
 #include "model.h"
+#include "keyframe_delegate.h"
 #include "../property_editors/delegate.h"
 
 #include <core/utils.h>
@@ -11,17 +12,42 @@ using namespace Core;
 Widget::Widget(QWidget* parent, Project& project)
 	: QDockWidget(parent)
 	, project_(project)
+	, container_(new QWidget(this))
+	, layout_(new QGridLayout())
 	, tree_(new QTreeView(this))
+	, splitter_(new QSplitter(this))
+	, keyframer_(new QTreeView(this))
 	, model_(std::make_shared<Model>())
 {
 	setWindowTitle(tr("Timeline"));
-	setWidget(tree_);
+
+	splitter_->addWidget(tree_);
+	splitter_->addWidget(keyframer_);
+	splitter_->setStretchFactor(1, 1);
+
+	layout_->addWidget(splitter_, 0, 0, 1, 2);
+	container_->setLayout(layout_);
+	setWidget(container_);
+
+	tree_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	keyframer_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+	keyframer_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
 	proxy_ = new QSortFilterProxyModel(this);
 	proxy_->setSourceModel(model_.get());
 	tree_->setModel(proxy_);
 	tree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	tree_->setItemDelegateForColumn(1, new PropertyEditors::Delegate(tree_));
+	tree_->setItemDelegateForColumn(static_cast<int>(Model::Columns::Value), new PropertyEditors::Delegate(tree_));
+
+	keyframer_->setIndentation(0);
+	keyframer_->setModel(proxy_);
+	keyframer_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	keyframer_->setItemDelegateForColumn(static_cast<int>(Model::Columns::Item), new KeyframeDelegate(*proxy_, *model_));
+
+	connect(tree_, &QTreeView::expanded, keyframer_, &QTreeView::expand);
+	connect(tree_, &QTreeView::collapsed, keyframer_, &QTreeView::collapse);
+	connect(tree_->verticalScrollBar(), &QScrollBar::valueChanged, this, &Widget::syncVerticalScrollBars);
+	connect(keyframer_->verticalScrollBar(), &QScrollBar::valueChanged, this, &Widget::syncVerticalScrollBars);
 
 	connect(model_.get(), &Model::propertyChanged, this, [&](const Property* prop, PropertyValue value)
 	{
@@ -44,6 +70,28 @@ void Widget::projectMutated(std::shared_ptr<MutationInfo> mutationInfo) const
 	auto newSelection = model_->apply(mutationInfo, selection.indexes());
 	tree_->selectionModel()->clear();
 	for (auto&& item : newSelection) tree_->selectionModel()->select(proxy_->mapFromSource(item), QItemSelectionModel::Select);
+	
+	keyframer_->setColumnHidden(static_cast<int>(Model::Columns::Value), true);
+
+	updateItemWidgets(model_->invisibleRootItem());
+}
+
+void Widget::updateItemWidgets(QStandardItem* parent) const
+{
+	for (auto t = 0; t < parent->rowCount();t++)
+	{
+		auto child = parent->child(t);
+		if (child->hasChildren()) updateItemWidgets(child);
+		
+		auto keyframeChild = parent->child(t, static_cast<int>(Model::Columns::Item));
+		keyframer_->openPersistentEditor(proxy_->mapFromSource(keyframeChild->index()));
+	}
+}
+
+void Widget::syncVerticalScrollBars(int value) const
+{
+	if (tree_->verticalScrollBar()->value() != value) tree_->verticalScrollBar()->setValue(value);
+	if (keyframer_->verticalScrollBar()->value() != value) keyframer_->verticalScrollBar()->setValue(value);
 }
 
 void Widget::mutate()
