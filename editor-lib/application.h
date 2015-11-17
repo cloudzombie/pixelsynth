@@ -39,7 +39,6 @@ private:
 
 	Core::Project project_;
 	QMainWindow* mainWindow_;
-	QMenuBar* menuBar_;
 	std::shared_ptr<Actions> actions_;
 
 	std::deque<Modules::Metadata> moduleMetadata_;

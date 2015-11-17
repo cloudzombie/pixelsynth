@@ -9,7 +9,6 @@ using Editor::Application;
 Application::Application(int argc, char *argv[])
 	: QApplication(argc, argv)
 	, mainWindow_(nullptr)
-	, menuBar_(nullptr)
 {
 	QFile f(":qdarkstyle/style.qss");
 	f.open(QFile::ReadOnly | QFile::Text);
@@ -47,7 +46,7 @@ void Application::applyModules()
 
 void Application::addActionAfter(QString existingActionText, QAction* actionToAdd) const
 {
-	for (auto&& menuChild: menuBar_->children())
+	for (auto&& menuChild: mainWindow_->menuBar()->children())
 	{
 		auto menu = qobject_cast<QMenu*>(menuChild);
 		if (!menu) continue;
@@ -96,26 +95,25 @@ void Application::connectActions()
 
 void Application::fillMenu() const
 {
-	auto fileMenu = menuBar_->addMenu(tr("&File"));
+	auto fileMenu = mainWindow_->menuBar()->addMenu(tr("&File"));
 	fileMenu->addAction(actions_->newFile);
 	fileMenu->addAction(actions_->openFile);
 	fileMenu->addAction(actions_->saveFileAs);
 	fileMenu->addSeparator();
 	fileMenu->addAction(actions_->exit);
 
-	auto editMenu = menuBar_->addMenu(tr("&Edit"));
+	auto editMenu = mainWindow_->menuBar()->addMenu(tr("&Edit"));
 	editMenu->addAction(actions_->undo);
 	editMenu->addAction(actions_->redo);
 }
 
 void Application::setup()
 {
-	if (menuBar_) menuBar_->deleteLater();
 	if (mainWindow_) mainWindow_->deleteLater();
 
 	project_ = Project();
 	mainWindow_ = new QMainWindow();
-	menuBar_ = new QMenuBar(0);
+	mainWindow_->menuBar()->setNativeMenuBar(false);
 
 	actions_ = std::make_shared<Actions>(this);
 	fillMenu();
