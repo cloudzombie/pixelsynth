@@ -88,7 +88,7 @@ void findRemovedItems(const MutationInfo& i, std::vector<Change<ITEMPTR>>& chang
 
 			if (curNode)
 			{
-				auto& curNodeItems = getItems(curNode);
+				auto curNodeItems = getItems(curNode);
 				auto itemIt = find_if(cbegin(curNodeItems), cend(curNodeItems), [&](auto& item)
 				{
 					return EqFn(prevItem)(item);
@@ -118,7 +118,7 @@ void findAddedOrMutatedItems(const MutationInfo& i, std::vector<Change<ITEMPTR>>
 
 			if (prevNode)
 			{
-				auto& prevNodeItems = getItems(prevNode);
+				auto prevNodeItems = getItems(prevNode);
 				auto itemIt = find_if(cbegin(prevNodeItems), cend(prevNodeItems), [&](auto& item)
 				{
 					return EqFn(curItem)(item);

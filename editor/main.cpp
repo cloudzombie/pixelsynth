@@ -44,6 +44,8 @@ int main(int argc, char *argv[])
 	Log::setConsoleInstance(spdlog::level::debug);
 	DefineNode(DummyNode);
 
+	Q_INIT_RESOURCE(style);
+
 	Editor::Application app(argc, argv);
 	return app.exec();
 }

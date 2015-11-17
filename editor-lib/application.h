@@ -28,7 +28,7 @@ private:
 	void addActionAfter(QString existingActionText, QAction* actionToAdd) const;
 
 	void connectActions();
-	void fillMenu(QMenuBar* menu) const;
+	void fillMenu() const;
 
 	void setup();
 	void load(QString filename);
@@ -38,7 +38,8 @@ private:
 	void saveFileAs();
 
 	Core::Project project_;
-	QMainWindow* mainWindow_ {};
+	QMainWindow* mainWindow_;
+	QMenuBar* menuBar_;
 	std::shared_ptr<Actions> actions_;
 
 	std::deque<Modules::Metadata> moduleMetadata_;
