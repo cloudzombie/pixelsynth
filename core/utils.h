@@ -11,6 +11,7 @@ static std::shared_ptr<Node> makeNode(HashValue type, std::string title)
 {
 	auto builder = Factory::makeNode(type);
 	builder->mutateProperty(hash("$Title"), [&](auto& prop) { prop.set(0, title); });
+	builder->mutateVisibility({ 0.0f, 1000.0f });
 	return std::make_shared<Node>(std::move(*builder));
 }
 

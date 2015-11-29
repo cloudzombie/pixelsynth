@@ -25,10 +25,9 @@ public:
 
 	Uuid uuid() const noexcept;
 	HashValue nodeType() const noexcept;
-
 	const properties_t& properties() const;
-
 	const ConnectorMetadataCollection& connectorMetadata() const;
+	const visibility_t visibility() const noexcept;
 
 	class Builder
 	{
@@ -49,6 +48,8 @@ public:
 		void mutateProperty(const HashValue hash, mutate_fn fn) noexcept;
 
 		void addConnector(ConnectorMetadata::Builder&& connector) noexcept;
+
+		void mutateVisibility(const visibility_t visibility) noexcept;
 
 	private:
 		friend class Node;

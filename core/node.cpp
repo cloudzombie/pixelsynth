@@ -12,6 +12,7 @@ using Core::ConnectorMetadata;
 using Core::ConnectorMetadataCollection;
 using Core::ConnectorMetadataPtr;
 using Core::PropertyMetadata;
+using Core::visibility_t;
 using Builder = Node::Builder;
 
 struct Node::Impl
@@ -21,6 +22,7 @@ struct Node::Impl
 	properties_t properties_;
 	ConnectorMetadataCollection* sharedConnectorMetadata_;
 	ConnectorMetadataCollection localConnectorMetadata_;
+	visibility_t visibility_;
 
 	// cache
 	ConnectorMetadataCollection combinedConnectorMetadata_;
@@ -98,6 +100,11 @@ const ConnectorMetadataCollection& Node::connectorMetadata() const
 	return impl_->combinedConnectorMetadata_;
 }
 
+const visibility_t Node::visibility() const noexcept
+{
+	return impl_->visibility_;
+}
+
 /////////////////////////////////////////////////////////
 // Builder boilerplate
 /////////////////////////////////////////////////////////
@@ -156,6 +163,11 @@ void Builder::addConnector(ConnectorMetadata::Builder&& connector) noexcept
 	impl_->localConnectorMetadata_.emplace_back(connector.withLocal(true).build());
 }
 
+void Builder::mutateVisibility(const visibility_t visibility) noexcept
+{
+	impl_->visibility_ = visibility;
+}
+
 ///
 
 template<class Archive>
@@ -165,6 +177,7 @@ void Node::save(Archive& archive) const
 	archive(impl_->nodeType_);
 	archive(impl_->properties_);
 	archive(impl_->localConnectorMetadata_);
+	archive(impl_->visibility_);
 }
 
 template<class Archive>
@@ -184,6 +197,8 @@ void Node::load(Archive& archive)
 	std::vector<MutableConnectorMetadataPtr> localConnectors;
 	archive(localConnectors);
 	for (auto& c : localConnectors) impl_->localConnectorMetadata_.emplace_back(c);
+
+	archive(impl_->visibility_);
 }
 
 template void Node::save<cereal::JSONOutputArchive>(cereal::JSONOutputArchive& archive) const;

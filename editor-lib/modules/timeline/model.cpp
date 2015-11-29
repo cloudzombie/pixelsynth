@@ -208,6 +208,8 @@ Model::Model()
 
 QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const QModelIndexList& oldSelection) noexcept
 {
+	emit documentMutated(&mutation->prev, &mutation->cur);
+
 	using NodeOrProperty = eggs::variant<const Node*, const Property*>;
 	std::unordered_map<NodeOrProperty, NodeOrProperty> mutated;
 

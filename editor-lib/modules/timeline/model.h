@@ -37,6 +37,7 @@ public:
 
 signals:
 	void propertyChanged(const Core::Property* prop, Core::PropertyValue newValue) const;
+	void documentMutated(const Core::Document* prevDocument, const Core::Document* curDocument) const;
 	void modelItemNodeMutated(const Core::Node* prevNode, const Core::Node* curNode) const;
 	void modelItemPropertyMutated(const Core::Property* prevProp, const Core::Property* curProp) const;
 

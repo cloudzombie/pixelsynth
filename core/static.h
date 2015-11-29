@@ -67,4 +67,5 @@ namespace Core
 	struct MutationInfo;
 
 	using tree_t = tree<NodePtr>;
+	using visibility_t = std::pair<Frame, Frame>;
 };

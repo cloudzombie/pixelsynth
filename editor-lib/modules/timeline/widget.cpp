@@ -1,9 +1,11 @@
 #include "widget.h"
 #include "model.h"
 #include "keyframe_delegate.h"
+#include "keyframe_header.h"
 #include "../property_editors/delegate.h"
 
 #include <core/utils.h>
+#include <core/mutation_info.h>
 
 using Editor::Modules::Timeline::Widget;
 
@@ -30,7 +32,6 @@ Widget::Widget(QWidget* parent, Project& project)
 	setWidget(container_);
 
 	tree_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-	keyframer_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	keyframer_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
 	proxy_ = new QSortFilterProxyModel(this);
@@ -43,6 +44,7 @@ Widget::Widget(QWidget* parent, Project& project)
 	keyframer_->setModel(proxy_);
 	keyframer_->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	keyframer_->setItemDelegateForColumn(static_cast<int>(Model::Columns::Item), new KeyframeDelegate(*proxy_, *model_));
+	keyframer_->setHeader(new KeyframeHeader(*model_, keyframer_));
 
 	connect(tree_, &QTreeView::expanded, keyframer_, &QTreeView::expand);
 	connect(tree_, &QTreeView::collapsed, keyframer_, &QTreeView::collapse);

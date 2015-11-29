@@ -1,6 +1,7 @@
 #include "keyframe_delegate.h"
 #include "model.h"
 
+using Core::Document;
 using Core::Node;
 using Core::Property;
 using Editor::Modules::Timeline::KeyframeNodeWidget;
@@ -12,19 +13,26 @@ using ModelItemDataType = Model::ModelItemDataType;
 
 ///
 
-KeyframeNodeWidget::KeyframeNodeWidget(const Model& model, const Node* node, QWidget* parent)
+KeyframeNodeWidget::KeyframeNodeWidget(const Model& model, const Document& document, const Node* node, QWidget* parent)
 	: QWidget(parent)
 	, model_(model)
 	, node_(node)
 {
-	auto update = [&](const Node* prevNode, const Node* curNode)
+	auto update = [&](const Document* prev, const Document* cur)
+	{
+		setFixedWidth(cur->settings().visibility.second);
+	};
+
+	auto updateNode = [&](const Node* prevNode, const Node* curNode)
 	{
 		if (prevNode != node_) return;
 		node_ = curNode;
 	};
-	connect(&model, &Model::modelItemNodeMutated, this, update);
+	connect(&model, &Model::documentMutated, this, update);
+	connect(&model, &Model::modelItemNodeMutated, this, updateNode);
 
-	setStyleSheet("background-color: #0f0;");
+	setStyleSheet("background-color: #0f0; margin: 4px 0px;");
+	update(&document, &document);
 }
 
 void KeyframeNodeWidget::mousePressEvent(QMouseEvent* event)
@@ -35,7 +43,7 @@ void KeyframeNodeWidget::mousePressEvent(QMouseEvent* event)
 
 ///
 
-KeyframePropertyWidget::KeyframePropertyWidget(const Model& model, const Property* prop, QWidget* parent)
+KeyframePropertyWidget::KeyframePropertyWidget(const Model& model, const Document& document, const Property* prop, QWidget* parent)
 	: QWidget(parent)
 	, model_(model)
 	, prop_(prop)
@@ -55,7 +63,12 @@ KeyframePropertyWidget::KeyframePropertyWidget(const Model& model, const Propert
 KeyframeDelegate::KeyframeDelegate(const QSortFilterProxyModel& proxy, const Model& model)
 	: proxy_(proxy)
 	, model_(model)
+	, document_(nullptr)
 {
+	connect(&model, &Model::documentMutated, this, [&](const Document* prev, const Document* cur)
+	{
+		document_ = cur;
+	});
 }
 
 QWidget* KeyframeDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
@@ -66,9 +79,9 @@ QWidget* KeyframeDelegate::createEditor(QWidget* parent, const QStyleOptionViewI
 	switch (type)
 	{
 	case ModelItemDataType::Node:
-		return new KeyframeNodeWidget(model_, static_cast<const Node*>(data), parent);
+		return new KeyframeNodeWidget(model_, *document_, static_cast<const Node*>(data), parent);
 	case ModelItemDataType::Property:
-		return new KeyframePropertyWidget(model_, static_cast<const Property*>(data), parent);
+		return new KeyframePropertyWidget(model_, *document_, static_cast<const Property*>(data), parent);
 	}
 
 	return nullptr;

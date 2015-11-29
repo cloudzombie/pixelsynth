@@ -9,6 +9,11 @@ class Document
 public:
 	using connections_t = std::vector<ConnectionPtr>;
 
+	struct Settings
+	{
+		visibility_t visibility;
+	};
+
 private:
 	struct Impl;
 
@@ -25,6 +30,7 @@ public:
 	const NodePtr& root() const noexcept;
 	const tree_t& nodes() const noexcept;
 	const connections_t& connections() const noexcept;
+	const Settings settings() const noexcept;
 
 	NodePtr parent(const Node& node) const noexcept;
 	NodePtr parent(const Property& prop) const noexcept;
@@ -54,6 +60,7 @@ public:
 		Builder& operator=(Builder&& rhs);
 
 		void mutate(NodePtr node, mutate_fn fn) const noexcept;
+		void mutateSettings(const Settings newSettings) noexcept;
 
 		void insertBefore(NodePtr before, std::initializer_list<NodePtr> nodes) noexcept;
 		void append(std::initializer_list<NodePtr> nodes) noexcept;

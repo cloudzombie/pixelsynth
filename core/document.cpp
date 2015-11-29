@@ -10,17 +10,20 @@ using Core::Connection;
 using Core::ConnectionPtr;
 using Core::HashValue;
 using Core::ConnectorMetadata;
+using Core::visibility_t;
 using Builder = Document::Builder;
 
 struct Document::Impl
 {
 	tree_t nodes_;
 	connections_t connections_;
+	Settings settings_;
 };
 
 Document::Document()
 	: impl_(std::make_unique<Impl>())
 {
+	impl_->settings_.visibility = { 0.0f, 1000.0f };
 }
 
 Document::~Document() = default;
@@ -51,6 +54,11 @@ const Core::tree_t& Document::nodes() const noexcept
 const Document::connections_t& Document::connections() const noexcept
 {
 	return impl_->connections_;
+}
+
+const Document::Settings Document::settings() const noexcept
+{
+	return impl_->settings_;
 }
 
 NodePtr Document::parent(const Node& node) const noexcept
@@ -211,6 +219,11 @@ void Builder::mutate(NodePtr node, mutate_fn fn) const noexcept
 	auto pos = find(begin(impl_->nodes_), end(impl_->nodes_), node);
 	assert(pos != end(impl_->nodes_));
 	impl_->nodes_.replace(pos, newNode);
+}
+
+void Builder::mutateSettings(const Document::Settings newSettings) noexcept
+{
+	impl_->settings_ = newSettings;
 }
 
 void Builder::fixupConnections() const

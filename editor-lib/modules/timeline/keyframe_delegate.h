@@ -8,7 +8,7 @@ class Model;
 class KeyframeNodeWidget: public QWidget
 {
 public:
-	explicit KeyframeNodeWidget(const Model& model, const Core::Node* node, QWidget* parent);
+	explicit KeyframeNodeWidget(const Model& model, const Core::Document& document, const Core::Node* node, QWidget* parent);
 
 private:
 	void mousePressEvent(QMouseEvent* event) override;
@@ -20,7 +20,7 @@ private:
 class KeyframePropertyWidget: public QWidget
 {
 public:
-	explicit KeyframePropertyWidget(const Model& model, const Core::Property* prop, QWidget* parent);
+	explicit KeyframePropertyWidget(const Model& model, const Core::Document& document, const Core::Property* prop, QWidget* parent);
 
 private:
 	const Model& model_;
@@ -39,6 +39,7 @@ private:
 
 	const QSortFilterProxyModel& proxy_;
 	const Model& model_;
+	const Core::Document* document_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline)
