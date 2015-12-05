@@ -43,7 +43,7 @@ Widget::Widget(QWidget* parent, Project& project)
 	keyframer_->setIndentation(0);
 	keyframer_->setModel(proxy_);
 	keyframer_->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	keyframer_->setItemDelegateForColumn(static_cast<int>(Model::Columns::Item), new KeyframeDelegate(*proxy_, *model_));
+	keyframer_->setItemDelegateForColumn(static_cast<int>(Model::Columns::Item), new KeyframeDelegate(project, *proxy_, *model_));
 	keyframer_->setHeader(new KeyframeHeader(*model_, keyframer_));
 
 	connect(tree_, &QTreeView::expanded, keyframer_, &QTreeView::expand);

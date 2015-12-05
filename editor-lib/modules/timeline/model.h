@@ -27,8 +27,8 @@ public:
 	QModelIndexList apply(std::shared_ptr<Core::MutationInfo> mutation, const QModelIndexList& oldSelection) noexcept;
 	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
-	const Core::Node* nodeFromIndex(const QModelIndex& index) const noexcept;
-	const Core::Property* propertyFromIndex(const QModelIndex& index) const noexcept;
+	Core::NodePtr nodeFromIndex(const QModelIndex& index) const noexcept;
+	Core::PropertyPtr propertyFromIndex(const QModelIndex& index) const noexcept;
 
 	// Converts the property value on that index into a QVariant and back again, used for testing purposes
 	Core::PropertyValue roundTripPropertyValueFromIndex(const QModelIndex& index) const noexcept;
@@ -38,13 +38,15 @@ public:
 signals:
 	void propertyChanged(const Core::Property* prop, Core::PropertyValue newValue) const;
 	void documentMutated(const Core::Document* prevDocument, const Core::Document* curDocument) const;
-	void modelItemNodeMutated(const Core::Node* prevNode, const Core::Node* curNode) const;
-	void modelItemPropertyMutated(const Core::Property* prevProp, const Core::Property* curProp) const;
+	void modelItemNodeMutated(Core::NodePtr prevNode, Core::NodePtr curNode) const;
+	void modelItemPropertyMutated(Core::PropertyPtr prevProp, Core::PropertyPtr curProp) const;
 
 private:
 	static int findChildIndex(QStandardItem* parent, ModelItem* item) noexcept;
 
-	ModelItem* findItem(const void* ptr) const noexcept;
+	ModelItem* findItem(QVariant ptr) const noexcept;
+	ModelItem* findItem(Core::NodePtr ptr) const noexcept;
+	ModelItem* findItem(Core::PropertyPtr ptr) const noexcept;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline)

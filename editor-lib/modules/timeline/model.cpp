@@ -6,7 +6,9 @@
 using Editor::Modules::Timeline::Model;
 using ChangeType = Core::MutationInfo::ChangeType;
 using Core::Node;
+using Core::NodePtr;
 using Core::Property;
+using Core::PropertyPtr;
 using Core::PropertyValue;
 using Core::Uuid;
 
@@ -128,16 +130,16 @@ private:
 class Model::ModelItem: public QStandardItem
 {
 public:
-	explicit ModelItem(const Model* model, const Node* node)
+	explicit ModelItem(const Model* model, NodePtr node)
 		: model_(model)
 	{
 		setFlags(flags_);
 		update(node);
 	}
 
-	explicit ModelItem(const Model* model, const Property* prop)
+	explicit ModelItem(const Model* model, PropertyPtr prop)
 		: model_(model)
-		, propertyValueItem_(new PropertyValueItem(model, prop_))
+		, propertyValueItem_(new PropertyValueItem(model, prop.get()))
 	{
 		setFlags(flags_);
 		update(prop);
@@ -154,38 +156,38 @@ public:
 		}
 	}
 
-	void update(const Node* node)
+	void update(NodePtr node)
 	{
 		auto prev = node_;
 		node_ = node;
-		setData(QVariant::fromValue<void*>(const_cast<void*>(static_cast<const void*>(node_))), static_cast<int>(ModelItemRoles::Data));
+		setData(QVariant::fromValue(node_), static_cast<int>(ModelItemRoles::Data));
 		setData(QVariant::fromValue<int>(static_cast<int>(ModelItemDataType::Node)), static_cast<int>(ModelItemRoles::Type));
 		setData(Core::prop<std::string>(*node, "$Title", 0).c_str(), Qt::DisplayRole);
 		emit model_->modelItemNodeMutated(prev, node);
 	}
 
-	void update(const Property* prop)
+	void update(PropertyPtr prop)
 	{
 		auto prev = prop_;
 		prop_ = prop;
-		setData(QVariant::fromValue<void*>(const_cast<void*>(static_cast<const void*>(prop_))), static_cast<int>(ModelItemRoles::Data));
+		setData(QVariant::fromValue(prop_), static_cast<int>(ModelItemRoles::Data));
 		setData(QVariant::fromValue<int>(static_cast<int>(ModelItemDataType::Property)), static_cast<int>(ModelItemRoles::Type));
 		setData(prop->metadata().title().c_str(), Qt::DisplayRole);
-		propertyValueItem_->update(prop);
+		propertyValueItem_->update(prop.get());
 		emit model_->modelItemPropertyMutated(prev, prop);
 	}
 
-	const Node* node() const { return node_; }
-	const Property* prop() const { return prop_; }
+	NodePtr node() const { return node_; }
+	PropertyPtr prop() const { return prop_; }
 	PropertyValueItem* propertyValueItem() const { return propertyValueItem_; }
 
-	static const Node* node(QStandardItem* item)
+	static NodePtr node(QStandardItem* item)
 	{
 		if (item->data(static_cast<int>(ModelItemRoles::Data)) == QVariant()) return nullptr;
 		return reinterpret_cast<ModelItem*>(item)->node_;
 	}
 
-	static const Property* prop(QStandardItem* item)
+	static PropertyPtr prop(QStandardItem* item)
 	{
 		if (item->data(static_cast<int>(ModelItemRoles::Data)) == QVariant()) return nullptr;
 		return reinterpret_cast<ModelItem*>(item)->prop_;
@@ -193,8 +195,8 @@ public:
 
 private:
 	const Model* model_;
-	const Node* node_ {};
-	const Property* prop_ {};
+	NodePtr node_ {};
+	PropertyPtr prop_ {};
 	PropertyValueItem* propertyValueItem_ {};
 
 	const Qt::ItemFlags flags_ { Qt::ItemIsSelectable | Qt::ItemIsEnabled };
@@ -210,7 +212,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 {
 	emit documentMutated(&mutation->prev, &mutation->cur);
 
-	using NodeOrProperty = eggs::variant<const Node*, const Property*>;
+	using NodeOrProperty = eggs::variant<NodePtr, PropertyPtr>;
 	std::unordered_map<NodeOrProperty, NodeOrProperty> mutated;
 
 	std::vector<ModelItem*> selection;
@@ -222,8 +224,8 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		{
 			if (mut.type != ChangeType::Mutated) continue;
 
-			findItem(mut.prev.get())->update(mut.cur.get());
-			mutated.insert({ mut.prev.get(), mut.cur.get() });
+			findItem(mut.prev)->update(mut.cur);
+			mutated.insert({ mut.prev, mut.cur });
 		}
 	};
 
@@ -232,6 +234,8 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 
 	auto resolve = [&](auto item) -> decltype(item)
 	{
+		if (!item) return item;
+
 		auto it = mutated.find(item);
 #ifdef _MSC_VER
 		if (it != cend(mutated)) return *it->second.target<decltype(item)>();
@@ -294,9 +298,9 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 	{
 		for (auto&& mut : changes)
 		{
-			QStandardItem* prevParentNode = findItem(resolve(mut.prevParent.get()));
+			QStandardItem* prevParentNode = findItem(resolve(mut.prevParent));
 			if (!prevParentNode && rowType == RowType::Node) prevParentNode = invisibleRootItem();
-			QStandardItem* curParentNode = findItem(resolve(mut.curParent.get()));
+			QStandardItem* curParentNode = findItem(resolve(mut.curParent));
 			if (!curParentNode && rowType == RowType::Node) curParentNode = invisibleRootItem();
 
 			switch (mut.type)
@@ -305,13 +309,13 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 			{
 				if (onlyRemove) continue;
 				LOG->debug("Adding at position {}: {}", mut.curIndex, *mut.cur);
-				setRow(curParentNode, mut.curIndex, createItems(mut.cur.get()), rowType);
+				setRow(curParentNode, mut.curIndex, createItems(mut.cur), rowType);
 				break;
 			}
 			case ChangeType::Removed:
 			{
 				if (!onlyRemove) continue;
-				auto item = findItem(mut.prev.get());
+				auto item = findItem(mut.prev);
 				if (!item) continue; // maybe was already deleted when parent was removed
 				auto childIndex = findChildIndex(prevParentNode, item);
 				if (childIndex != -1) prevParentNode->removeRow(childIndex);
@@ -326,7 +330,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 				assert(prevParentNode && curParentNode);
 
 				LOG->debug("Mutating from position {} to position {}: {}", mut.prevIndex, mut.curIndex, *mut.cur);
-				auto item = findItem(resolve(mut.prev.get()));
+				auto item = findItem(resolve(mut.prev));
 				assert(item);
 				auto prevIndex = findChildIndex(prevParentNode, item);
 				assert(prevIndex != -1);
@@ -341,13 +345,13 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		}
 	};
 
-	auto createNodeItems = [&](const Node* node)
+	auto createNodeItems = [&](NodePtr node)
 	{
 		QList<QStandardItem*> items;
 		items << new ModelItem(this, node) << nullptr;
 		return items;
 	};
-	auto createPropertyItems = [&](const Property* prop)
+	auto createPropertyItems = [&](PropertyPtr prop)
 	{
 		QList<QStandardItem*> items;
 		auto modelItem = new ModelItem(this, prop);
@@ -395,12 +399,12 @@ int Model::findChildIndex(QStandardItem* parent, ModelItem* item) noexcept
 	return -1;
 }
 
-Model::ModelItem* Model::findItem(const void* ptr) const noexcept
+Model::ModelItem* Model::findItem(QVariant ptr) const noexcept
 {
 	auto results = match(
 		index(0, 0),
 		static_cast<int>(ModelItemRoles::Data),
-		QVariant::fromValue(const_cast<void*>(ptr)),
+		ptr,
 		1,
 		Qt::MatchRecursive);
 
@@ -408,12 +412,16 @@ Model::ModelItem* Model::findItem(const void* ptr) const noexcept
 	return static_cast<ModelItem*>(itemFromIndex(results.at(0)));
 }
 
-const Node* Model::nodeFromIndex(const QModelIndex& index) const noexcept
+Model::ModelItem* Model::findItem(NodePtr ptr) const noexcept { return findItem(QVariant::fromValue(ptr)); }
+Model::ModelItem* Model::findItem(PropertyPtr ptr) const noexcept { return findItem(QVariant::fromValue(ptr)); }
+
+
+NodePtr Model::nodeFromIndex(const QModelIndex& index) const noexcept
 {
 	return ModelItem::node(itemFromIndex(index));
 }
 
-const Property* Model::propertyFromIndex(const QModelIndex& index) const noexcept
+PropertyPtr Model::propertyFromIndex(const QModelIndex& index) const noexcept
 {
 	return ModelItem::prop(itemFromIndex(index));
 }
