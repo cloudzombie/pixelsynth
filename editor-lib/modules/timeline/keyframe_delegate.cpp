@@ -74,21 +74,25 @@ private:
 	bool isDragging_ {};
 };
 
-KeyframeNodeWidget::KeyframeNodeWidget(Project& project, const Model& model, const Document& document, NodePtr node, QWidget* parent)
+KeyframeNodeWidget::KeyframeNodeWidget(Project& project, const Model& model, NodePtr node, QWidget* parent)
 	: QWidget(parent)
-	, document_(&document)
 	, model_(model)
 	, node_(node)
 {
-	auto updateWidth = [this]()
+	setFixedWidth(1000);
+	area_ = new QWidget(this);
+	area_->setStyleSheet("background-color: #666");
+	area_->show();
+
+	auto updateGeometry = [this]()
 	{
-		setFixedWidth(stop_ - start_);
-		move(start_, pos().y());
+		area_->setFixedWidth(stop_ - start_);
+		area_->move(start_, area_->pos().y());
 		startHandle_->move(0 - startHandle_->width() * 0.5, 0);
-		stopHandle_->move(width() - stopHandle_->width() * 0.5, 0);
+		stopHandle_->move(area_->width() - stopHandle_->width() * 0.5, 0);
 	};
 
-	auto dragged = [this, updateWidth](DragHandle::Which which, const int offset)
+	auto dragged = [this, updateGeometry](DragHandle::Which which, const int offset)
 	{
 		switch (which)
 		{
@@ -99,50 +103,50 @@ KeyframeNodeWidget::KeyframeNodeWidget(Project& project, const Model& model, con
 			stop_ += offset;
 			break;
 		}
-		updateWidth();
+		updateGeometry();
 	};
 
 	auto released = [this, &project]()
 	{
-		/*project.mutate([&](auto& mut)
+		project.mutate([&](Document::Builder& mut)
 		{
 			mut.mutate(node_, [&](auto& node)
 			{
 				node.mutateVisibility({ start_, stop_ });
 			});
-		});*/
+		}, "Change visibility");
 	};
 
-	startHandle_ = new DragHandle(this, DragHandle::Which::Start, dragged, released);
+	startHandle_ = new DragHandle(area_, DragHandle::Which::Start, dragged, released);
 	startHandle_->setStyleSheet("background-color: #f0f;");
-	stopHandle_ = new DragHandle(this, DragHandle::Which::Stop, dragged, released);
+	stopHandle_ = new DragHandle(area_, DragHandle::Which::Stop, dragged, released);
 	stopHandle_->setStyleSheet("background-color: #f0f;");
 	startHandle_->show();
 	stopHandle_->show();
 
-	auto update = [this, updateWidth](const Document* prev, const Document* cur)
-	{
-		document_ = cur;
-
-		std::tie(start_, stop_) = cur->settings().visibility;
-		updateWidth();
-	};
-
-	auto updateNode = [&](NodePtr prevNode, NodePtr curNode)
+	auto updateNode = [&, updateGeometry](NodePtr prevNode, NodePtr curNode)
 	{
 		if (prevNode != node_) return;
 		node_ = curNode;
-	};
-	connect(&model, &Model::documentMutated, this, update);
-	connect(&model, &Model::modelItemNodeMutated, this, updateNode);
 
-	setBackgroundRole(QPalette::Shadow);
-	update(&document, &document);
+		std::tie(start_, stop_) = node_->visibility();
+		updateGeometry();
+	};
+	connect(&model, &Model::modelItemNodeMutated, this, updateNode);
+	updateNode(node_, node_);
+
+	/*auto updateDocument = [this](const Document* prev, const Document* cur)
+	{
+		auto vis = cur->settings().visibility;
+		setFixedWidth(vis.second - vis.first);
+	};
+	connect(&model, &Model::documentMutated, this, updateDocument);
+	updateDocument(&project.current(), &project.current());*/
 }
 
 ///
 
-KeyframePropertyWidget::KeyframePropertyWidget(const Model& model, const Document& document, PropertyPtr prop, QWidget* parent)
+KeyframePropertyWidget::KeyframePropertyWidget(const Model& model, PropertyPtr prop, QWidget* parent)
 	: QWidget(parent)
 	, model_(model)
 	, prop_(prop)
@@ -163,12 +167,7 @@ KeyframeDelegate::KeyframeDelegate(Project& project, const QSortFilterProxyModel
 	: project_(project)
 	, proxy_(proxy)
 	, model_(model)
-	, document_(nullptr)
 {
-	connect(&model, &Model::documentMutated, this, [&](const Document* prev, const Document* cur)
-	{
-		document_ = cur;
-	});
 }
 
 QWidget* KeyframeDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
@@ -178,9 +177,9 @@ QWidget* KeyframeDelegate::createEditor(QWidget* parent, const QStyleOptionViewI
 	switch (type)
 	{
 	case ModelItemDataType::Node:
-		return new KeyframeNodeWidget(project_, model_, *document_, proxy_.data(index, static_cast<int>(ModelItemRoles::Data)).value<NodePtr>(), parent);
+		return new KeyframeNodeWidget(project_, model_, proxy_.data(index, static_cast<int>(ModelItemRoles::Data)).value<NodePtr>(), parent);
 	case ModelItemDataType::Property:
-		return new KeyframePropertyWidget(model_, *document_, proxy_.data(index, static_cast<int>(ModelItemRoles::Data)).value<PropertyPtr>(), parent);
+		return new KeyframePropertyWidget(model_, proxy_.data(index, static_cast<int>(ModelItemRoles::Data)).value<PropertyPtr>(), parent);
 	}
 
 	return nullptr;

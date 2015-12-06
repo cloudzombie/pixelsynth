@@ -8,13 +8,13 @@ class Model;
 class KeyframeNodeWidget: public QWidget
 {
 public:
-	explicit KeyframeNodeWidget(Core::Project& project, const Model& model, const Core::Document& document, Core::NodePtr node, QWidget* parent);
+	explicit KeyframeNodeWidget(Core::Project& project, const Model& model, Core::NodePtr node, QWidget* parent);
 
 private:
 	const Model& model_;
-	const Core::Document* document_;
 	Core::NodePtr node_;
 
+	QWidget* area_;
 	QWidget* startHandle_;
 	QWidget* stopHandle_;
 	Core::Frame start_;
@@ -24,7 +24,7 @@ private:
 class KeyframePropertyWidget: public QWidget
 {
 public:
-	explicit KeyframePropertyWidget(const Model& model, const Core::Document& document, Core::PropertyPtr prop, QWidget* parent);
+	explicit KeyframePropertyWidget(const Model& model, Core::PropertyPtr prop, QWidget* parent);
 
 private:
 	const Model& model_;
@@ -44,7 +44,6 @@ private:
 	Core::Project& project_;
 	const QSortFilterProxyModel& proxy_;
 	const Model& model_;
-	const Core::Document* document_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline)
