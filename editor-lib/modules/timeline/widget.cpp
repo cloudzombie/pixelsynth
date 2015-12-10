@@ -1,13 +1,13 @@
 #include "widget.h"
 #include "model.h"
-#include "keyframe_delegate.h"
-#include "keyframe_header.h"
+#include "keyframe_treeview.h"
 #include "../property_editors/delegate.h"
 
 #include <core/utils.h>
 #include <core/mutation_info.h>
 
 using Editor::Modules::Timeline::Widget;
+using Editor::Modules::Timeline::KeyframeTreeView;
 
 using namespace Core;
 
@@ -18,10 +18,14 @@ Widget::Widget(QWidget* parent, Project& project)
 	, layout_(new QGridLayout())
 	, tree_(new QTreeView(this))
 	, splitter_(new QSplitter(this))
-	, keyframer_(new QTreeView(this))
 	, model_(std::make_shared<Model>())
+	, proxy_(new QSortFilterProxyModel(this))
 {
 	setWindowTitle(tr("Timeline"));
+
+	proxy_->setSourceModel(model_.get());
+
+	keyframer_ = new KeyframeTreeView(project, *proxy_, *model_, this);
 
 	splitter_->addWidget(tree_);
 	splitter_->addWidget(keyframer_);
@@ -34,17 +38,9 @@ Widget::Widget(QWidget* parent, Project& project)
 	tree_->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 	keyframer_->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
 
-	proxy_ = new QSortFilterProxyModel(this);
-	proxy_->setSourceModel(model_.get());
 	tree_->setModel(proxy_);
 	tree_->setSelectionMode(QAbstractItemView::ExtendedSelection);
 	tree_->setItemDelegateForColumn(static_cast<int>(Model::Columns::Value), new PropertyEditors::Delegate(tree_));
-
-	keyframer_->setIndentation(0);
-	keyframer_->setModel(proxy_);
-	keyframer_->setSelectionMode(QAbstractItemView::ExtendedSelection);
-	keyframer_->setItemDelegateForColumn(static_cast<int>(Model::Columns::Item), new KeyframeDelegate(project, *proxy_, *model_));
-	keyframer_->setHeader(new KeyframeHeader(*model_, keyframer_));
 
 	connect(tree_, &QTreeView::expanded, keyframer_, &QTreeView::expand);
 	connect(tree_, &QTreeView::collapsed, keyframer_, &QTreeView::collapse);

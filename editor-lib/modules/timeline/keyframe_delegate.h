@@ -4,11 +4,15 @@
 BEGIN_NAMESPACE(Editor) BEGIN_NAMESPACE(Modules) BEGIN_NAMESPACE(Timeline)
 
 class Model;
+class KeyframeDelegate;
+class KeyframeSelectionModel;
 
 class KeyframeNodeWidget: public QWidget
 {
+	Q_OBJECT
+
 public:
-	explicit KeyframeNodeWidget(Core::Project& project, const Model& model, Core::NodePtr node, QWidget* parent);
+	explicit KeyframeNodeWidget(const KeyframeDelegate& kd, Core::Project& project, const Model& model, const KeyframeSelectionModel& selectionModel, Core::NodePtr node, QWidget* parent);
 
 private:
 	const Model& model_;
@@ -36,7 +40,11 @@ class KeyframeDelegate: public QStyledItemDelegate
 	Q_OBJECT
 
 public:
-	explicit KeyframeDelegate(Core::Project& project, const QSortFilterProxyModel& proxy, const Model& model);
+	explicit KeyframeDelegate(Core::Project& project, const QSortFilterProxyModel& proxy, const Model& model, const KeyframeSelectionModel& selectionModel);
+
+signals:
+	void nodeClicked(Core::NodePtr node, bool multiSelect) const;
+	void visibilityOffset(const std::pair<Core::Frame, Core::Frame> offsets) const;
 
 private:
 	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
@@ -44,6 +52,7 @@ private:
 	Core::Project& project_;
 	const QSortFilterProxyModel& proxy_;
 	const Model& model_;
+	const KeyframeSelectionModel& selectionModel_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline)
