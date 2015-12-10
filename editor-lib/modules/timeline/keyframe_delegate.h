@@ -16,6 +16,7 @@ public:
 
 	const QWidget* area() const { return area_; }
 	Core::NodePtr node() const { return node_; }
+	Core::visibility_t visibility() const { return { start_, stop_ }; }
 
 private:
 	const Model& model_;
@@ -50,10 +51,12 @@ public:
 	const std::unordered_set<KeyframeNodeWidget*> nodes() const { return nodes_; }
 	const std::unordered_set<KeyframePropertyWidget*> properties() const { return properties_; }
 
+	const KeyframeNodeWidget* findByNode(Core::NodePtr node) const noexcept;
+
 signals:
 	void nodePressed(Core::NodePtr node, bool multiSelect) const;
-	void nodeDragged(Core::NodePtr node, const std::pair<Core::Frame, Core::Frame> offsets) const;
-	void nodeReleased(Core::NodePtr node, bool multiSelect, const std::pair<Core::Frame, Core::Frame> offsets) const;
+	void nodeDragged(Core::NodePtr node, const Core::visibility_t offsets) const;
+	void nodeReleased(Core::NodePtr node, bool multiSelect) const;
 
 private:
 	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;

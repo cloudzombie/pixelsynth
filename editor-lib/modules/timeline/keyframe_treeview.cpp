@@ -29,58 +29,46 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 
 	connect(delegate_, &KeyframeDelegate::nodePressed, this, [&](NodePtr node, bool multiSelect)
 	{
-		if (multiSelect) selectionModel_->setSelected(node, !selectionModel_->isSelected(node));
+		if (!multiSelect)
+		{
+			selectionModel_->reset();
+			selectionModel_->setSelected(node, true);
+		}
+		else
+		{
+			selectionModel_->setSelected(node, !selectionModel_->isSelected(node));
+		}
 	});
 
-	connect(delegate_, &KeyframeDelegate::nodeDragged, this, [&](NodePtr node, const std::pair<Core::Frame, Core::Frame> offsets)
+	connect(delegate_, &KeyframeDelegate::nodeDragged, this, [&](NodePtr node, const Core::visibility_t offsets)
 	{
-		auto nodes = selectionModel_->nodes();
-		nodes.insert(node);
+		selectionModel_->setSelected(node, true);
 
-		for (auto&& n : nodes)
+		for (auto&& n : selectionModel_->nodes())
 		{
 			emit selectionModel_->selectionMoved(n, offsets);
 		}
 	});
 
-	connect(delegate_, &KeyframeDelegate::nodeReleased, this, [&](NodePtr node, bool multiSelect, const std::pair<Frame, Frame> offset)
+	connect(delegate_, &KeyframeDelegate::nodeReleased, this, [&](NodePtr node, bool multiSelect)
 	{
-		bool didDrag = fabs(offset.first) > 0.1 || fabs(offset.second) > 0.1;
-
-		if (!didDrag)
+		auto newVis = delegate_->findByNode(node)->visibility();
+		bool didDrag = fabs(newVis.first - node->visibility().first) > 0.1 || fabs(newVis.second - node->visibility().second) > 0.1;
+		if (!didDrag) return;
+		
+		project.mutate([&](Document::Builder& mut)
 		{
-			// If we didn't drag this was just a regular click
-			bool isSelected = selectionModel_->isSelected(node);
+			auto nodes = selectionModel_->nodes();
+			nodes.insert(node);
 
-			if (!multiSelect)
+			for (auto&& n : nodes)
 			{
-				selectionModel_->reset();
-				selectionModel_->setSelected(node, true);
-			}
-			else
-			{
-				// already selected in nodePressed event
-			}
-		}
-		else
-		{
-			// We dragged!
-			project.mutate([&](Document::Builder& mut)
-			{
-				auto nodes = selectionModel_->nodes();
-				nodes.insert(node);
-
-				for (auto&& n : nodes)
+				mut.mutate(n, [&](auto& builder)
 				{
-					mut.mutate(n, [&](auto& builder)
-					{
-						Frame start, stop;
-						std::tie(start, stop) = n->visibility();
-						builder.mutateVisibility({ start + offset.first, stop + offset.second });
-					});
-				}
-			}, "Change visibility");
-		}
+					builder.mutateVisibility(delegate_->findByNode(n)->visibility());
+				});
+			}
+		}, "Change visibility");
 	});
 
 	connect(&model, &Model::modelItemNodeMutated, selectionModel_.get(), &KeyframeSelectionModel::nodeMutated);

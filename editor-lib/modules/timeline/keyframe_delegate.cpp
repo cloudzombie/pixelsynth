@@ -21,7 +21,7 @@ using ModelItemDataType = Model::ModelItemDataType;
 
 ///
 
-enum class WhichHandle { Start, Stop };
+enum class WhichHandle { Start, Stop, Both };
 
 using pressed_fn_t = std::function<void(bool)>;
 using dragged_fn_t = std::function<void(WhichHandle, const int)>;
@@ -112,8 +112,7 @@ private:
 		{
 			int pos = event->globalPos().x() - dragX_;
 			dragX_ = event->globalPos().x();
-			draggedFn_(WhichHandle::Start, pos);
-			draggedFn_(WhichHandle::Stop, pos);
+			draggedFn_(WhichHandle::Both, pos);
 		}
 	}
 
@@ -167,29 +166,60 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 		area_->setStyleSheet(QString("background-color: #" + color));
 	};
 
+	auto restrictOffset = [this, &project](Core::visibility_t offset, bool limitEquallyMinimal) -> auto
+	{
+		auto docVis = project.current().settings().visibility;
+
+		Frame nStart = start_ + offset.first;
+		Frame nStop = stop_ + offset.second;
+
+		Frame dStart = 0, dStop = 0;
+
+		if (nStart < docVis.first) dStart -= (nStart - docVis.first);
+		if (nStop > docVis.second) dStop -= (nStop - docVis.second);
+
+		if (limitEquallyMinimal)
+		{
+			if (-dStop > dStart) dStart = dStop;
+			else if (dStart > -dStop) dStop = dStart;
+		}
+
+		offset.first += dStart;
+		offset.second += dStop;
+
+		return offset;
+	};
+
 	///
 
 	auto pressed = [&](bool multiSelect) { emit kd.nodePressed(node_, multiSelect); };
 
-	auto dragged = [this, &kd, updateGeometry](WhichHandle which, const int offset)
+	auto dragged = [this, &kd, restrictOffset](WhichHandle which, const int offsetX)
 	{
-		Core::Frame offsetFrames = offset;
+		Core::Frame offsetFrames = offsetX;
+		Core::visibility_t offset, restricted;
 
 		switch (which)
 		{
 		case WhichHandle::Start:
-			emit kd.nodeDragged(node_, { offsetFrames, 0.0f });
+			offset = { offsetFrames, 0.0f };
 			break;
 		case WhichHandle::Stop:
-			emit kd.nodeDragged(node_, { 0.0f, offsetFrames });
+			offset = { 0.0f, offsetFrames };
+			break;
+		case WhichHandle::Both:
+			offset = { offsetFrames, offsetFrames };
 			break;
 		}
+		
+		restricted = restrictOffset(offset, which == WhichHandle::Both);
+		emit kd.nodeDragged(node_, restricted);
 	};
 
 	auto released = [this, &kd](bool multiSelect)
 	{
 		auto vis = node_->visibility();
-		emit kd.nodeReleased(node_, multiSelect, { start_ - vis.first, stop_ - vis.second });
+		emit kd.nodeReleased(node_, multiSelect);
 	};
 
 	auto hovered = [this, &selectionModel, updateSelectionArea](bool over)
@@ -216,9 +246,10 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 		updateSelectionArea(selected);
 	});
 
-	connect(&selectionModel, &KeyframeSelectionModel::selectionMoved, this, [this, updateGeometry](NodePtr n, const std::pair<Core::Frame, Core::Frame> offsets)
+	connect(&selectionModel, &KeyframeSelectionModel::selectionMoved, this, [this, updateGeometry, restrictOffset](NodePtr n, Core::visibility_t offsets)
 	{
 		if (n != node_) return;
+		offsets = restrictOffset(offsets, false);
 		start_ += offsets.first;
 		stop_ += offsets.second;
 		updateGeometry();
@@ -307,4 +338,13 @@ void KeyframeDelegate::destroyEditor(QWidget* editor, const QModelIndex& index) 
 		properties_.erase(prop);
 	}
 	QStyledItemDelegate::destroyEditor(editor, index);
+}
+
+const KeyframeNodeWidget* KeyframeDelegate::findByNode(NodePtr node) const noexcept
+{
+	for (auto&& w : nodes_)
+	{
+		if (w->node() == node) return w;
+	}
+	return nullptr;
 }
