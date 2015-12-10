@@ -43,9 +43,9 @@ public:
 	explicit KeyframeDelegate(Core::Project& project, const QSortFilterProxyModel& proxy, const Model& model, const KeyframeSelectionModel& selectionModel);
 
 signals:
-	void nodeClicked(Core::NodePtr node, bool multiSelect) const;
+	void nodePressed(Core::NodePtr node, bool multiSelect) const;
 	void nodeDragged(const std::pair<Core::Frame, Core::Frame> offsets) const;
-	void nodeReleased(const std::pair<Core::Frame, Core::Frame> offsets) const;
+	void nodeReleased(Core::NodePtr node, bool multiSelect, const std::pair<Core::Frame, Core::Frame> offsets) const;
 
 private:
 	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;

@@ -26,26 +26,9 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 	setItemDelegateForColumn(static_cast<int>(Model::Columns::Item), keyframeDelegate);
 	setHeader(new KeyframeHeader(model, this));
 
-	connect(keyframeDelegate, &KeyframeDelegate::nodeClicked, this, [&](NodePtr node, bool multiSelect)
+	connect(keyframeDelegate, &KeyframeDelegate::nodePressed, this, [&](NodePtr node, bool multiSelect)
 	{
-		bool selected = false;
-
-		if (selectionModel_->isSelected(node))
-		{
-			// Was this the only selected node or are we replacing the selection?
-			if (selectionModel_->nodes().size() == 1 || !multiSelect)
-			{
-				selectionModel_->reset();
-				if (!multiSelect) selected = true;
-			}
-		}
-		else
-		{
-			if (!multiSelect) selectionModel_->reset();
-			selected = true;
-		}
-
-		if (selected) selectionModel_->setSelected(node, selected);
+		if (!multiSelect) selectionModel_->setSelected(node, true);
 	});
 
 	connect(keyframeDelegate, &KeyframeDelegate::nodeDragged, this, [&](const std::pair<Core::Frame, Core::Frame> offsets)
@@ -56,23 +39,44 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 		}
 	});
 
-	connect(&model, &Model::modelItemNodeMutated, selectionModel_.get(), &KeyframeSelectionModel::nodeMutated);
-
-	connect(keyframeDelegate, &KeyframeDelegate::nodeReleased, this, [&](const std::pair<Frame, Frame> offset)
+	connect(keyframeDelegate, &KeyframeDelegate::nodeReleased, this, [&](NodePtr node, bool multiSelect, const std::pair<Frame, Frame> offset)
 	{
-		project.mutate([&](Document::Builder& mut)
+		bool didDrag = fabs(offset.first) > 0.1 || fabs(offset.second) > 0.1;
+
+		if (!didDrag)
 		{
-			for (auto&& node: selectionModel_->nodes())
+			// If we didn't drag this was just a regular click
+			bool isSelected = selectionModel_->isSelected(node);
+
+			if (!multiSelect)
 			{
-				mut.mutate(node, [&](auto& builder)
-				{
-					Frame start, stop;
-					std::tie(start, stop) = node->visibility();
-					builder.mutateVisibility({ start + offset.first, stop + offset.second });
-				});
+				selectionModel_->reset();
+				selectionModel_->setSelected(node, true);
 			}
-		}, "Change visibility");
+			else
+			{
+				selectionModel_->setSelected(node, !isSelected);
+			}
+		}
+		else
+		{
+			// We dragged!
+			project.mutate([&](Document::Builder& mut)
+			{
+				for (auto&& node : selectionModel_->nodes())
+				{
+					mut.mutate(node, [&](auto& builder)
+					{
+						Frame start, stop;
+						std::tie(start, stop) = node->visibility();
+						builder.mutateVisibility({ start + offset.first, stop + offset.second });
+					});
+				}
+			}, "Change visibility");
+		}
 	});
+
+	connect(&model, &Model::modelItemNodeMutated, selectionModel_.get(), &KeyframeSelectionModel::nodeMutated);
 }
 
 void KeyframeTreeView::mousePressEvent(QMouseEvent* event)

@@ -25,7 +25,8 @@ enum class WhichHandle { Start, Stop };
 
 using pressed_fn_t = std::function<void(bool)>;
 using dragged_fn_t = std::function<void(WhichHandle, const int)>;
-using released_fn_t = std::function<void()>;
+using released_fn_t = std::function<void(bool)>;
+using hover_fn_t = std::function<void(bool)>;
 
 class DragHandle: public QWidget
 {
@@ -68,7 +69,7 @@ private:
 		if (event->button() == Qt::LeftButton)
 		{
 			isDragging_ = false;
-			releasedFn_();
+			releasedFn_(event->modifiers() & Qt::ControlModifier);
 		}
 	}
 
@@ -84,12 +85,14 @@ private:
 class SelectionArea: public QWidget
 {
 public:
-	SelectionArea(QWidget* parent, pressed_fn_t pressedFn, dragged_fn_t draggedFn, released_fn_t releasedFn)
+	SelectionArea(QWidget* parent, pressed_fn_t pressedFn, dragged_fn_t draggedFn, released_fn_t releasedFn, hover_fn_t hoverFn)
 		: QWidget(parent)
 		, pressedFn_(pressedFn)
 		, draggedFn_(draggedFn)
 		, releasedFn_(releasedFn)
+		, hoverFn_(hoverFn)
 	{
+		setMouseTracking(true);
 	}
 
 private:
@@ -119,13 +122,24 @@ private:
 		if (event->button() == Qt::LeftButton)
 		{
 			isDragging_ = false;
-			releasedFn_();
+			releasedFn_(event->modifiers() & Qt::ControlModifier);
 		}
+	}
+
+	void enterEvent(QEvent* event) override
+	{
+		hoverFn_(true);
+	}
+
+	void leaveEvent(QEvent* event) override
+	{
+		hoverFn_(false);
 	}
 
 	pressed_fn_t pressedFn_;
 	dragged_fn_t draggedFn_;
 	released_fn_t releasedFn_;
+	hover_fn_t hoverFn_;
 
 	int dragX_;
 	bool isDragging_ {};
@@ -146,15 +160,16 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 		stopHandle_->move(area_->width() - stopHandle_->width() * 0.5, 0);
 	};
 
-	auto updateSelectionArea = [this](bool selected)
+	auto updateSelectionArea = [this](bool selected, bool hovering = false)
 	{
 		QString color = selected ? "888" : "666";
+		if (hovering) color = "999";
 		area_->setStyleSheet(QString("background-color: #" + color));
 	};
 
 	///
 
-	auto pressed = [&](bool multiSelect) { emit kd.nodeClicked(node_, multiSelect); };
+	auto pressed = [&](bool multiSelect) { emit kd.nodePressed(node_, multiSelect); };
 
 	auto dragged = [this, &kd, updateGeometry](WhichHandle which, const int offset)
 	{
@@ -171,18 +186,20 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 		}
 	};
 
-	auto released = [this, &kd]()
+	auto released = [this, &kd](bool multiSelect)
 	{
 		auto vis = node_->visibility();
-		if (fabs(start_ - vis.first) > 0.1 || fabs(stop_ - vis.second) > 0.1)
-		{
-			emit kd.nodeReleased({ start_ - vis.first, stop_ - vis.second });
-		}
+		emit kd.nodeReleased(node_, multiSelect, { start_ - vis.first, stop_ - vis.second });
+	};
+
+	auto hovered = [this, &selectionModel, updateSelectionArea](bool over)
+	{
+		updateSelectionArea(selectionModel.isSelected(node_), over);
 	};
 
 	///
 
-	area_ = new SelectionArea(this, pressed, dragged, released);
+	area_ = new SelectionArea(this, pressed, dragged, released, hovered);
 	updateSelectionArea(selectionModel.isSelected(node));
 	area_->show();
 
