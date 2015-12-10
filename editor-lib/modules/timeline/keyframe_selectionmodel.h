@@ -16,6 +16,7 @@ public:
 
 signals:
 	void selectionChanged(Core::NodePtr node, bool selected);
+	void selectionMoved(Core::NodePtr node, const std::pair<Core::Frame, Core::Frame> offsets);
 
 public slots:
 	void nodeMutated(Core::NodePtr prevNode, Core::NodePtr curNode);

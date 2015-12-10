@@ -21,16 +21,19 @@ using ModelItemDataType = Model::ModelItemDataType;
 
 ///
 
+enum class WhichHandle { Start, Stop };
+
+using pressed_fn_t = std::function<void(bool)>;
+using dragged_fn_t = std::function<void(WhichHandle, const int)>;
+using released_fn_t = std::function<void()>;
+
 class DragHandle: public QWidget
 {
 public:
-	enum class Which { Start, Stop };
-	using dragged_fn_t = std::function<void(Which, const int)>;
-	using released_fn_t = std::function<void()>;
-
-	DragHandle(QWidget* parent, Which which, dragged_fn_t draggedFn, released_fn_t releasedFn)
+	DragHandle(QWidget* parent, WhichHandle which, pressed_fn_t pressedFn, dragged_fn_t draggedFn, released_fn_t releasedFn)
 		: QWidget(parent)
 		, which_(which)
+		, pressedFn_(pressedFn)
 		, draggedFn_(draggedFn)
 		, releasedFn_(releasedFn)
 	{
@@ -46,6 +49,7 @@ private:
 		{
 			isDragging_ = true;
 			dragX_ = event->globalPos().x();
+			pressedFn_(event->modifiers() & Qt::ControlModifier);
 		}
 	}
 
@@ -68,7 +72,8 @@ private:
 		}
 	}
 
-	Which which_;
+	WhichHandle which_;
+	pressed_fn_t pressedFn_;
 	dragged_fn_t draggedFn_;
 	released_fn_t releasedFn_;
 
@@ -79,22 +84,51 @@ private:
 class SelectionArea: public QWidget
 {
 public:
-	using pressed_fn_t = std::function<void(QMouseEvent*, bool)>;
-
-	SelectionArea(QWidget* parent, pressed_fn_t pressedFn)
+	SelectionArea(QWidget* parent, pressed_fn_t pressedFn, dragged_fn_t draggedFn, released_fn_t releasedFn)
 		: QWidget(parent)
 		, pressedFn_(pressedFn)
+		, draggedFn_(draggedFn)
+		, releasedFn_(releasedFn)
 	{
 	}
 
 private:
 	void mousePressEvent(QMouseEvent* event) override
 	{
-		auto multiSelect = event->modifiers() & Qt::ControlModifier;
-		pressedFn_(event, multiSelect);
+		if (event->button() == Qt::LeftButton)
+		{
+			isDragging_ = true;
+			dragX_ = event->globalPos().x();
+			pressedFn_(event->modifiers() & Qt::ControlModifier);
+		}
+	}
+
+	void mouseMoveEvent(QMouseEvent* event) override
+	{
+		if (event->buttons() & Qt::LeftButton && isDragging_)
+		{
+			int pos = event->globalPos().x() - dragX_;
+			dragX_ = event->globalPos().x();
+			draggedFn_(WhichHandle::Start, pos);
+			draggedFn_(WhichHandle::Stop, pos);
+		}
+	}
+
+	void mouseReleaseEvent(QMouseEvent* event) override
+	{
+		if (event->button() == Qt::LeftButton)
+		{
+			isDragging_ = false;
+			releasedFn_();
+		}
 	}
 
 	pressed_fn_t pressedFn_;
+	dragged_fn_t draggedFn_;
+	released_fn_t releasedFn_;
+
+	int dragX_;
+	bool isDragging_ {};
 };
 
 KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& project, const Model& model, const KeyframeSelectionModel& selectionModel, NodePtr node, QWidget* parent)
@@ -104,23 +138,6 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 {
 	setFixedWidth(1000);
 
-	area_ = new SelectionArea(this, [&](QMouseEvent* event, bool multiSelect) { emit kd.nodeClicked(node_, multiSelect); });
-
-	auto updateSelectionArea = [this](bool selected)
-	{
-		QString color = selected ? "888" : "666";
-		area_->setStyleSheet(QString("background-color: #" + color));
-	};
-
-	updateSelectionArea(selectionModel.isSelected(node));
-	area_->show();
-
-	connect(&selectionModel, &KeyframeSelectionModel::selectionChanged, this, [this, updateSelectionArea](NodePtr n, bool selected)
-	{
-		if (n != node_) return;
-		updateSelectionArea(selected);
-	});
-
 	auto updateGeometry = [this]()
 	{
 		area_->setFixedWidth(stop_ - start_);
@@ -129,32 +146,66 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 		stopHandle_->move(area_->width() - stopHandle_->width() * 0.5, 0);
 	};
 
-	auto dragged = [this, updateGeometry](DragHandle::Which which, const int offset)
+	auto updateSelectionArea = [this](bool selected)
 	{
+		QString color = selected ? "888" : "666";
+		area_->setStyleSheet(QString("background-color: #" + color));
+	};
+
+	///
+
+	auto pressed = [&](bool multiSelect) { emit kd.nodeClicked(node_, multiSelect); };
+
+	auto dragged = [this, &kd, updateGeometry](WhichHandle which, const int offset)
+	{
+		Core::Frame offsetFrames = offset;
+
 		switch (which)
 		{
-		case DragHandle::Which::Start:
-			start_ += offset;
+		case WhichHandle::Start:
+			emit kd.nodeDragged({ offsetFrames, 0.0f });
 			break;
-		case DragHandle::Which::Stop:
-			stop_ += offset;
+		case WhichHandle::Stop:
+			emit kd.nodeDragged({ 0.0f, offsetFrames });
 			break;
 		}
-		updateGeometry();
 	};
 
 	auto released = [this, &kd]()
 	{
 		auto vis = node_->visibility();
-		emit kd.visibilityOffset({ start_ - vis.first, stop_ - vis.second });
+		if (fabs(start_ - vis.first) > 0.1 || fabs(stop_ - vis.second) > 0.1)
+		{
+			emit kd.nodeReleased({ start_ - vis.first, stop_ - vis.second });
+		}
 	};
 
-	startHandle_ = new DragHandle(area_, DragHandle::Which::Start, dragged, released);
+	///
+
+	area_ = new SelectionArea(this, pressed, dragged, released);
+	updateSelectionArea(selectionModel.isSelected(node));
+	area_->show();
+
+	startHandle_ = new DragHandle(area_, WhichHandle::Start, pressed, dragged, released);
 	startHandle_->setStyleSheet("background-color: #f0f;");
-	stopHandle_ = new DragHandle(area_, DragHandle::Which::Stop, dragged, released);
+	stopHandle_ = new DragHandle(area_, WhichHandle::Stop, pressed, dragged, released);
 	stopHandle_->setStyleSheet("background-color: #f0f;");
 	startHandle_->show();
 	stopHandle_->show();
+
+	connect(&selectionModel, &KeyframeSelectionModel::selectionChanged, this, [this, updateSelectionArea](NodePtr n, bool selected)
+	{
+		if (n != node_) return;
+		updateSelectionArea(selected);
+	});
+
+	connect(&selectionModel, &KeyframeSelectionModel::selectionMoved, this, [this, updateGeometry](NodePtr n, const std::pair<Core::Frame, Core::Frame> offsets)
+	{
+		if (n != node_) return;
+		start_ += offsets.first;
+		stop_ += offsets.second;
+		updateGeometry();
+	});
 
 	auto updateNode = [&, updateGeometry](NodePtr prevNode, NodePtr curNode)
 	{

@@ -44,7 +44,8 @@ public:
 
 signals:
 	void nodeClicked(Core::NodePtr node, bool multiSelect) const;
-	void visibilityOffset(const std::pair<Core::Frame, Core::Frame> offsets) const;
+	void nodeDragged(const std::pair<Core::Frame, Core::Frame> offsets) const;
+	void nodeReleased(const std::pair<Core::Frame, Core::Frame> offsets) const;
 
 private:
 	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;

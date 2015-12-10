@@ -44,12 +44,21 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 			if (!multiSelect) selectionModel_->reset();
 			selected = true;
 		}
-		selectionModel_->setSelected(node, selected);
+
+		if (selected) selectionModel_->setSelected(node, selected);
+	});
+
+	connect(keyframeDelegate, &KeyframeDelegate::nodeDragged, this, [&](const std::pair<Core::Frame, Core::Frame> offsets)
+	{
+		for (auto&& node : selectionModel_->nodes())
+		{
+			emit selectionModel_->selectionMoved(node, offsets);
+		}
 	});
 
 	connect(&model, &Model::modelItemNodeMutated, selectionModel_.get(), &KeyframeSelectionModel::nodeMutated);
 
-	connect(keyframeDelegate, &KeyframeDelegate::visibilityOffset, this, [&](const std::pair<Frame, Frame> offset)
+	connect(keyframeDelegate, &KeyframeDelegate::nodeReleased, this, [&](const std::pair<Frame, Frame> offset)
 	{
 		project.mutate([&](Document::Builder& mut)
 		{
