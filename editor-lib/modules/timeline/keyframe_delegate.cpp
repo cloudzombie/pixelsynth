@@ -293,7 +293,6 @@ KeyframeNodeEditor::KeyframeNodeEditor(KeyframeDelegate& kd, Project& project, c
 	connect(&kd, &KeyframeDelegate::selectionMoved, this, [this, updateGeometry, restrictOffset](KeyframeWidget* w, Core::visibility_t offsets)
 	{
 		if (w != area_) return;
-		offsets = restrictOffset(offsets, false);
 		start_ += offsets.first;
 		stop_ += offsets.second;
 		updateGeometry();
