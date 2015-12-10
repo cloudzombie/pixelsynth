@@ -28,14 +28,17 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 
 	connect(keyframeDelegate, &KeyframeDelegate::nodePressed, this, [&](NodePtr node, bool multiSelect)
 	{
-		if (!multiSelect) selectionModel_->setSelected(node, true);
+		if (multiSelect) selectionModel_->setSelected(node, !selectionModel_->isSelected(node));
 	});
 
-	connect(keyframeDelegate, &KeyframeDelegate::nodeDragged, this, [&](const std::pair<Core::Frame, Core::Frame> offsets)
+	connect(keyframeDelegate, &KeyframeDelegate::nodeDragged, this, [&](NodePtr node, const std::pair<Core::Frame, Core::Frame> offsets)
 	{
-		for (auto&& node : selectionModel_->nodes())
+		auto nodes = selectionModel_->nodes();
+		nodes.insert(node);
+
+		for (auto&& n : nodes)
 		{
-			emit selectionModel_->selectionMoved(node, offsets);
+			emit selectionModel_->selectionMoved(n, offsets);
 		}
 	});
 
@@ -55,7 +58,7 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 			}
 			else
 			{
-				selectionModel_->setSelected(node, !isSelected);
+				// already selected in nodePressed event
 			}
 		}
 		else
@@ -63,12 +66,15 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 			// We dragged!
 			project.mutate([&](Document::Builder& mut)
 			{
-				for (auto&& node : selectionModel_->nodes())
+				auto nodes = selectionModel_->nodes();
+				nodes.insert(node);
+
+				for (auto&& n : nodes)
 				{
-					mut.mutate(node, [&](auto& builder)
+					mut.mutate(n, [&](auto& builder)
 					{
 						Frame start, stop;
-						std::tie(start, stop) = node->visibility();
+						std::tie(start, stop) = n->visibility();
 						builder.mutateVisibility({ start + offset.first, stop + offset.second });
 					});
 				}

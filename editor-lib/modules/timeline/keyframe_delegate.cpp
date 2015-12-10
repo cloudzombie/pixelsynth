@@ -178,10 +178,10 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 		switch (which)
 		{
 		case WhichHandle::Start:
-			emit kd.nodeDragged({ offsetFrames, 0.0f });
+			emit kd.nodeDragged(node_, { offsetFrames, 0.0f });
 			break;
 		case WhichHandle::Stop:
-			emit kd.nodeDragged({ 0.0f, offsetFrames });
+			emit kd.nodeDragged(node_, { 0.0f, offsetFrames });
 			break;
 		}
 	};

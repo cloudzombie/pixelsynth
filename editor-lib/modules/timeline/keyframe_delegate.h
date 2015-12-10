@@ -44,7 +44,7 @@ public:
 
 signals:
 	void nodePressed(Core::NodePtr node, bool multiSelect) const;
-	void nodeDragged(const std::pair<Core::Frame, Core::Frame> offsets) const;
+	void nodeDragged(Core::NodePtr node, const std::pair<Core::Frame, Core::Frame> offsets) const;
 	void nodeReleased(Core::NodePtr node, bool multiSelect, const std::pair<Core::Frame, Core::Frame> offsets) const;
 
 private:
