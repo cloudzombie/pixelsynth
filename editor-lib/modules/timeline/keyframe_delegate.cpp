@@ -23,18 +23,17 @@ using ModelItemDataType = Model::ModelItemDataType;
 
 enum class WhichHandle { Start, Stop, Both };
 
-using pressed_fn_t = std::function<void(bool)>;
+using clicked_fn_t = std::function<void(bool)>;
 using dragged_fn_t = std::function<void(WhichHandle, const int)>;
-using released_fn_t = std::function<void(bool)>;
+using released_fn_t = std::function<void()>;
 using hover_fn_t = std::function<void(bool)>;
 
 class DragHandle: public QWidget
 {
 public:
-	DragHandle(QWidget* parent, WhichHandle which, pressed_fn_t pressedFn, dragged_fn_t draggedFn, released_fn_t releasedFn)
+	DragHandle(QWidget* parent, WhichHandle which, dragged_fn_t draggedFn, released_fn_t releasedFn)
 		: QWidget(parent)
 		, which_(which)
-		, pressedFn_(pressedFn)
 		, draggedFn_(draggedFn)
 		, releasedFn_(releasedFn)
 	{
@@ -50,7 +49,6 @@ private:
 		{
 			isDragging_ = true;
 			dragX_ = event->globalPos().x();
-			pressedFn_(event->modifiers() & Qt::ControlModifier);
 		}
 	}
 
@@ -69,12 +67,11 @@ private:
 		if (event->button() == Qt::LeftButton)
 		{
 			isDragging_ = false;
-			releasedFn_(event->modifiers() & Qt::ControlModifier);
+			releasedFn_();
 		}
 	}
 
 	WhichHandle which_;
-	pressed_fn_t pressedFn_;
 	dragged_fn_t draggedFn_;
 	released_fn_t releasedFn_;
 
@@ -85,9 +82,9 @@ private:
 class SelectionArea: public QWidget
 {
 public:
-	SelectionArea(QWidget* parent, pressed_fn_t pressedFn, dragged_fn_t draggedFn, released_fn_t releasedFn, hover_fn_t hoverFn)
+	SelectionArea(QWidget* parent, clicked_fn_t clickedFn, dragged_fn_t draggedFn, released_fn_t releasedFn, hover_fn_t hoverFn)
 		: QWidget(parent)
-		, pressedFn_(pressedFn)
+		, clickedFn_(clickedFn)
 		, draggedFn_(draggedFn)
 		, releasedFn_(releasedFn)
 		, hoverFn_(hoverFn)
@@ -101,8 +98,8 @@ private:
 		if (event->button() == Qt::LeftButton)
 		{
 			isDragging_ = true;
+			isClicking_ = true;
 			dragX_ = event->globalPos().x();
-			pressedFn_(event->modifiers() & Qt::ControlModifier);
 		}
 	}
 
@@ -110,6 +107,7 @@ private:
 	{
 		if (event->buttons() & Qt::LeftButton && isDragging_)
 		{
+			isClicking_ = false;
 			int pos = event->globalPos().x() - dragX_;
 			dragX_ = event->globalPos().x();
 			draggedFn_(WhichHandle::Both, pos);
@@ -120,8 +118,16 @@ private:
 	{
 		if (event->button() == Qt::LeftButton)
 		{
+			if (isClicking_)
+			{
+				clickedFn_(event->modifiers() & Qt::ControlModifier);
+			}
+			else
+			{
+				releasedFn_();
+			}
+			isClicking_ = false;
 			isDragging_ = false;
-			releasedFn_(event->modifiers() & Qt::ControlModifier);
 		}
 	}
 
@@ -135,13 +141,14 @@ private:
 		hoverFn_(false);
 	}
 
-	pressed_fn_t pressedFn_;
+	clicked_fn_t clickedFn_;
 	dragged_fn_t draggedFn_;
 	released_fn_t releasedFn_;
 	hover_fn_t hoverFn_;
 
 	int dragX_;
 	bool isDragging_ {};
+	bool isClicking_ {};
 };
 
 KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& project, const Model& model, const KeyframeSelectionModel& selectionModel, NodePtr node, QWidget* parent)
@@ -192,7 +199,7 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 
 	///
 
-	auto pressed = [&](bool multiSelect) { emit kd.nodePressed(node_, multiSelect); };
+	auto clicked = [&](bool multiSelect) { emit kd.clicked(node_, multiSelect); };
 
 	auto dragged = [this, &kd, restrictOffset](WhichHandle which, const int offsetX)
 	{
@@ -213,13 +220,13 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 		}
 		
 		restricted = restrictOffset(offset, which == WhichHandle::Both);
-		emit kd.nodeDragged(node_, restricted);
+		emit kd.dragStart(node_, restricted);
 	};
 
-	auto released = [this, &kd](bool multiSelect)
+	auto released = [this, &kd]()
 	{
 		auto vis = node_->visibility();
-		emit kd.nodeReleased(node_, multiSelect);
+		emit kd.dragStop(node_);
 	};
 
 	auto hovered = [this, &selectionModel, updateSelectionArea](bool over)
@@ -229,13 +236,13 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 
 	///
 
-	area_ = new SelectionArea(this, pressed, dragged, released, hovered);
+	area_ = new SelectionArea(this, clicked, dragged, released, hovered);
 	updateSelectionArea(selectionModel.isSelected(node));
 	area_->show();
 
-	startHandle_ = new DragHandle(area_, WhichHandle::Start, pressed, dragged, released);
+	startHandle_ = new DragHandle(area_, WhichHandle::Start, dragged, released);
 	startHandle_->setStyleSheet("background-color: #f0f;");
-	stopHandle_ = new DragHandle(area_, WhichHandle::Stop, pressed, dragged, released);
+	stopHandle_ = new DragHandle(area_, WhichHandle::Stop, dragged, released);
 	stopHandle_->setStyleSheet("background-color: #f0f;");
 	startHandle_->show();
 	stopHandle_->show();

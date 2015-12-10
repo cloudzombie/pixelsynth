@@ -27,7 +27,7 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 	setItemDelegateForColumn(static_cast<int>(Model::Columns::Item), delegate_);
 	setHeader(new KeyframeHeader(model, this));
 
-	connect(delegate_, &KeyframeDelegate::nodePressed, this, [&](NodePtr node, bool multiSelect)
+	connect(delegate_, &KeyframeDelegate::clicked, this, [&](NodePtr node, bool multiSelect)
 	{
 		if (!multiSelect)
 		{
@@ -40,17 +40,18 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 		}
 	});
 
-	connect(delegate_, &KeyframeDelegate::nodeDragged, this, [&](NodePtr node, const Core::visibility_t offsets)
+	connect(delegate_, &KeyframeDelegate::dragStart, this, [&](NodePtr node, const Core::visibility_t offsets)
 	{
-		selectionModel_->setSelected(node, true);
+		auto nodes = selectionModel_->nodes();
+		nodes.insert(node);
 
-		for (auto&& n : selectionModel_->nodes())
+		for (auto&& n : nodes)
 		{
 			emit selectionModel_->selectionMoved(n, offsets);
 		}
 	});
 
-	connect(delegate_, &KeyframeDelegate::nodeReleased, this, [&](NodePtr node, bool multiSelect)
+	connect(delegate_, &KeyframeDelegate::dragStop, this, [&](NodePtr node)
 	{
 		auto newVis = delegate_->findByNode(node)->visibility();
 		bool didDrag = fabs(newVis.first - node->visibility().first) > 0.1 || fabs(newVis.second - node->visibility().second) > 0.1;
@@ -73,6 +74,9 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 
 	connect(&model, &Model::modelItemNodeMutated, selectionModel_.get(), &KeyframeSelectionModel::nodeMutated);
 }
+
+void KeyframeTreeView::drawRow(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
+{}
 
 void KeyframeTreeView::mousePressEvent(QMouseEvent* event)
 {

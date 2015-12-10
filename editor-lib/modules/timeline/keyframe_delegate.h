@@ -54,9 +54,9 @@ public:
 	const KeyframeNodeWidget* findByNode(Core::NodePtr node) const noexcept;
 
 signals:
-	void nodePressed(Core::NodePtr node, bool multiSelect) const;
-	void nodeDragged(Core::NodePtr node, const Core::visibility_t offsets) const;
-	void nodeReleased(Core::NodePtr node, bool multiSelect) const;
+	void clicked(Core::NodePtr node, bool multiSelect) const;
+	void dragStart(Core::NodePtr node, const Core::visibility_t offsets) const;
+	void dragStop(Core::NodePtr node) const;
 
 private:
 	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
