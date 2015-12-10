@@ -51,33 +51,20 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 
 	connect(delegate_, &KeyframeDelegate::dragEnded, this, [&](KeyframeWidget* widget)
 	{
-		auto wn = qobject_cast<KeyframeNodeWidget*>(widget);
-		if (!wn) return;
-
-		auto newVis = wn->visibility();
-		bool didDrag = fabs(newVis.first - wn->node()->visibility().first) > 0.1 || fabs(newVis.second - wn->node()->visibility().second) > 0.1;
-		if (!didDrag) return;
-		
 		project.mutate([&](Document::Builder& mut)
 		{
 			auto widgets = delegate_->selected();
 			widgets.insert(widget);
 
-			for (auto&& w : widgets)
-			{
-				auto wn = qobject_cast<KeyframeNodeWidget*>(w);
-				if (!wn) continue;
-				mut.mutate(wn->node(), [&](auto& builder)
-				{
-					builder.mutateVisibility(wn->visibility());
-				});
-			}
+			for (auto&& w : widgets) w->editor()->applyMutation(mut);
 		}, "Change visibility");
 	});
 }
 
 void KeyframeTreeView::drawRow(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
-{}
+{
+	QTreeView::drawRow(painter, option, index);
+}
 
 void KeyframeTreeView::mousePressEvent(QMouseEvent* event)
 {
@@ -99,9 +86,7 @@ void KeyframeTreeView::mouseMoveEvent(QMouseEvent* event)
 		auto globalRect = QRect(dragPos_, event->globalPos()).normalized();
 		for (auto&& widget : delegate_->widgets())
 		{
-			auto area = widget->area();
-			if (!area) continue;
-			auto globalNodeRect = QRect(0, 0, area->width(), area->height()).translated(area->parentWidget()->mapToGlobal(area->pos()));
+			auto globalNodeRect = QRect(0, 0, widget->width(), widget->height()).translated(widget->parentWidget()->mapToGlobal(widget->pos()));
 
 			if (globalRect.intersects(globalNodeRect))
 			{

@@ -1,53 +1,71 @@
 #pragma once
 #include <editor-lib/static.h>
+#include <core/document.h>
 
 BEGIN_NAMESPACE(Editor) BEGIN_NAMESPACE(Modules) BEGIN_NAMESPACE(Timeline)
 
 class Model;
 class KeyframeDelegate;
+class KeyframeWidget;
+
+class KeyframeEditor: public QWidget
+{
+	Q_OBJECT
+
+public:
+	KeyframeEditor(QWidget* parent);
+
+	virtual const std::vector<KeyframeWidget*> widgets() const = 0;
+	virtual void applyMutation(Core::Document::Builder& mut) = 0;
+
+protected:
+	void paintEvent(QPaintEvent* pe) override;
+};
 
 class KeyframeWidget: public QWidget
 {
 	Q_OBJECT
 
 public:
-	explicit KeyframeWidget(KeyframeDelegate& kd, Core::Project& project, const Model& model, QWidget* parent);
+	KeyframeWidget(QWidget* parent);
 
-	virtual const QWidget* area() const = 0;
+	virtual void setSelected(bool selected) = 0;
+	KeyframeEditor* editor() const { return qobject_cast<KeyframeEditor*>(parentWidget()); }
 
 protected:
-	const Model& model_;
+	void paintEvent(QPaintEvent* pe) override;
 };
 
-class KeyframeNodeWidget: public KeyframeWidget
+class KeyframeNodeEditor: public KeyframeEditor
 {
 	Q_OBJECT
 
 public:
-	explicit KeyframeNodeWidget(KeyframeDelegate& kd, Core::Project& project, const Model& model, QWidget* parent, Core::NodePtr node);
+	explicit KeyframeNodeEditor(KeyframeDelegate& kd, Core::Project& project, const Model& model, QWidget* parent, Core::NodePtr node);
 
-	const QWidget* area() const override { return area_; }
-	Core::NodePtr node() const { return node_; }
-	Core::visibility_t visibility() const { return { start_, stop_ }; }
+	const std::vector<KeyframeWidget*> widgets() const override { return { area_ }; }
 
 private:
+	void applyMutation(Core::Document::Builder& mut);
+
 	Core::NodePtr node_;
 
-	QWidget* area_;
+	KeyframeWidget* area_;
 	QWidget* startHandle_;
 	QWidget* stopHandle_;
 	Core::Frame start_;
 	Core::Frame stop_;
 };
 
-class KeyframePropertyWidget: public KeyframeWidget
+class KeyframePropertyEditor: public KeyframeEditor
 {
 	Q_OBJECT
 
 public:
-	explicit KeyframePropertyWidget(KeyframeDelegate& kd, Core::Project& project, const Model& model, QWidget* parent, Core::PropertyPtr prop);
+	explicit KeyframePropertyEditor(KeyframeDelegate& kd, Core::Project& project, const Model& model, QWidget* parent, Core::PropertyPtr prop);
 
-	const QWidget* area() const override { return nullptr; }
+	const std::vector<KeyframeWidget*> widgets() const override { return {}; }
+	void applyMutation(Core::Document::Builder& mut) {}
 
 private:
 	Core::PropertyPtr prop_;
@@ -62,8 +80,6 @@ public:
 
 	const std::unordered_set<KeyframeWidget*> widgets() const { return widgets_; }
 	const std::unordered_set<KeyframeWidget*> selected() const { return selected_; }
-
-	const KeyframeNodeWidget* findByNode(Core::NodePtr node) const noexcept;
 
 	void resetSelection();
 	void setSelected(KeyframeWidget* widget, bool selected);
