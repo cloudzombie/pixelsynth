@@ -14,6 +14,9 @@ class KeyframeNodeWidget: public QWidget
 public:
 	explicit KeyframeNodeWidget(const KeyframeDelegate& kd, Core::Project& project, const Model& model, const KeyframeSelectionModel& selectionModel, Core::NodePtr node, QWidget* parent);
 
+	const QWidget* area() const { return area_; }
+	Core::NodePtr node() const { return node_; }
+
 private:
 	const Model& model_;
 	Core::NodePtr node_;
@@ -27,6 +30,8 @@ private:
 
 class KeyframePropertyWidget: public QWidget
 {
+	Q_OBJECT
+
 public:
 	explicit KeyframePropertyWidget(const Model& model, Core::PropertyPtr prop, QWidget* parent);
 
@@ -42,6 +47,9 @@ class KeyframeDelegate: public QStyledItemDelegate
 public:
 	explicit KeyframeDelegate(Core::Project& project, const QSortFilterProxyModel& proxy, const Model& model, const KeyframeSelectionModel& selectionModel);
 
+	const std::unordered_set<KeyframeNodeWidget*> nodes() const { return nodes_; }
+	const std::unordered_set<KeyframePropertyWidget*> properties() const { return properties_; }
+
 signals:
 	void nodePressed(Core::NodePtr node, bool multiSelect) const;
 	void nodeDragged(Core::NodePtr node, const std::pair<Core::Frame, Core::Frame> offsets) const;
@@ -49,11 +57,15 @@ signals:
 
 private:
 	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+	void destroyEditor(QWidget* editor, const QModelIndex& index) const override;
 
 	Core::Project& project_;
 	const QSortFilterProxyModel& proxy_;
 	const Model& model_;
 	const KeyframeSelectionModel& selectionModel_;
+
+	mutable std::unordered_set<KeyframeNodeWidget*> nodes_;
+	mutable std::unordered_set<KeyframePropertyWidget*> properties_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline)

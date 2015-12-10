@@ -279,10 +279,32 @@ QWidget* KeyframeDelegate::createEditor(QWidget* parent, const QStyleOptionViewI
 	switch (type)
 	{
 	case ModelItemDataType::Node:
-		return new KeyframeNodeWidget(*this, project_, model_, selectionModel_, proxy_.data(index, static_cast<int>(ModelItemRoles::Data)).value<NodePtr>(), parent);
+	{
+		auto widget = new KeyframeNodeWidget(*this, project_, model_, selectionModel_, proxy_.data(index, static_cast<int>(ModelItemRoles::Data)).value<NodePtr>(), parent);
+		nodes_.insert(widget);
+		return widget;
+	}
 	case ModelItemDataType::Property:
-		return new KeyframePropertyWidget(model_, proxy_.data(index, static_cast<int>(ModelItemRoles::Data)).value<PropertyPtr>(), parent);
+	{
+		auto widget = new KeyframePropertyWidget(model_, proxy_.data(index, static_cast<int>(ModelItemRoles::Data)).value<PropertyPtr>(), parent);
+		properties_.insert(widget);
+		return widget;
+	}
 	}
 
 	return nullptr;
+}
+
+void KeyframeDelegate::destroyEditor(QWidget* editor, const QModelIndex& index) const
+{
+	auto node = qobject_cast<KeyframeNodeWidget*>(editor);
+
+	if (node) nodes_.erase(node);
+	else
+	{
+		auto prop = qobject_cast<KeyframePropertyWidget*>(editor);
+		assert(prop); // if it wasn't a node, it has to be a property
+		properties_.erase(prop);
+	}
+	QStyledItemDelegate::destroyEditor(editor, index);
 }
