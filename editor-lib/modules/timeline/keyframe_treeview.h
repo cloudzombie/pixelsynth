@@ -4,8 +4,8 @@
 BEGIN_NAMESPACE(Editor) BEGIN_NAMESPACE(Modules) BEGIN_NAMESPACE(Timeline)
 
 class Model;
+class KeyframeWidget;
 class KeyframeDelegate;
-class KeyframeSelectionModel;
 
 class KeyframeTreeView: public QTreeView
 {
@@ -22,13 +22,12 @@ private:
 
 	QRubberBand* rubberBand_;
 	KeyframeDelegate* delegate_;
-	std::shared_ptr<KeyframeSelectionModel> selectionModel_;
 
 	QPoint dragPos_;
 	bool isDragging_ {};
 
-	// The nodes that are selected by rubber band drag, but were not selected previously
-	std::unordered_set<Core::NodePtr> nodesDragSelected_;
+	// The widgets that are selected by rubber band drag, but were not selected previously
+	std::unordered_set<KeyframeWidget*> dragSelected_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline)

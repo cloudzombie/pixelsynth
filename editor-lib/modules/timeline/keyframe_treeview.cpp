@@ -3,76 +3,77 @@
 #include "keyframe_treeview.h"
 #include "keyframe_delegate.h"
 #include "keyframe_header.h"
-#include "keyframe_selectionmodel.h"
 #include "model.h"
 
 using Core::Document;
 using Core::Project;
 using Core::NodePtr;
 using Core::Frame;
+using Editor::Modules::Timeline::KeyframeWidget;
 using Editor::Modules::Timeline::KeyframeTreeView;
-using Editor::Modules::Timeline::KeyframeSelectionModel;
 using Editor::Modules::Timeline::Model;
 
 KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& proxy, Model& model, QWidget* parent)
 	: QTreeView(parent)
-	, selectionModel_(std::make_shared<KeyframeSelectionModel>())
 	, rubberBand_(new QRubberBand(QRubberBand::Rectangle, this))
 {
 	setIndentation(0);
 	setModel(&proxy);
 	setSelectionMode(QAbstractItemView::NoSelection);
 
-	delegate_ = new KeyframeDelegate(project, proxy, model, *selectionModel_.get());
+	delegate_ = new KeyframeDelegate(project, proxy, model);
 	setItemDelegateForColumn(static_cast<int>(Model::Columns::Item), delegate_);
 	setHeader(new KeyframeHeader(model, this));
 
-	connect(delegate_, &KeyframeDelegate::clicked, this, [&](NodePtr node, bool multiSelect)
+	connect(delegate_, &KeyframeDelegate::clicked, this, [&](KeyframeWidget* widget, bool multiSelect)
 	{
 		if (!multiSelect)
 		{
-			selectionModel_->reset();
-			selectionModel_->setSelected(node, true);
+			delegate_->resetSelection();
+			delegate_->setSelected(widget, true);
 		}
 		else
 		{
-			selectionModel_->setSelected(node, !selectionModel_->isSelected(node));
+			delegate_->setSelected(widget, !delegate_->isSelected(widget));
 		}
 	});
 
-	connect(delegate_, &KeyframeDelegate::dragStart, this, [&](NodePtr node, const Core::visibility_t offsets)
+	connect(delegate_, &KeyframeDelegate::dragMoving, this, [&](KeyframeWidget* widget, const Core::visibility_t offsets)
 	{
-		auto nodes = selectionModel_->nodes();
-		nodes.insert(node);
+		auto widgets = delegate_->selected();
+		widgets.insert(widget);
 
-		for (auto&& n : nodes)
+		for (auto&& w : widgets)
 		{
-			emit selectionModel_->selectionMoved(n, offsets);
+			emit delegate_->selectionMoved(w, offsets);
 		}
 	});
 
-	connect(delegate_, &KeyframeDelegate::dragStop, this, [&](NodePtr node)
+	connect(delegate_, &KeyframeDelegate::dragEnded, this, [&](KeyframeWidget* widget)
 	{
-		auto newVis = delegate_->findByNode(node)->visibility();
-		bool didDrag = fabs(newVis.first - node->visibility().first) > 0.1 || fabs(newVis.second - node->visibility().second) > 0.1;
+		auto wn = qobject_cast<KeyframeNodeWidget*>(widget);
+		if (!wn) return;
+
+		auto newVis = wn->visibility();
+		bool didDrag = fabs(newVis.first - wn->node()->visibility().first) > 0.1 || fabs(newVis.second - wn->node()->visibility().second) > 0.1;
 		if (!didDrag) return;
 		
 		project.mutate([&](Document::Builder& mut)
 		{
-			auto nodes = selectionModel_->nodes();
-			nodes.insert(node);
+			auto widgets = delegate_->selected();
+			widgets.insert(widget);
 
-			for (auto&& n : nodes)
+			for (auto&& w : widgets)
 			{
-				mut.mutate(n, [&](auto& builder)
+				auto wn = qobject_cast<KeyframeNodeWidget*>(w);
+				if (!wn) continue;
+				mut.mutate(wn->node(), [&](auto& builder)
 				{
-					builder.mutateVisibility(delegate_->findByNode(n)->visibility());
+					builder.mutateVisibility(wn->visibility());
 				});
 			}
 		}, "Change visibility");
 	});
-
-	connect(&model, &Model::modelItemNodeMutated, selectionModel_.get(), &KeyframeSelectionModel::nodeMutated);
 }
 
 void KeyframeTreeView::drawRow(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
@@ -84,7 +85,7 @@ void KeyframeTreeView::mousePressEvent(QMouseEvent* event)
 	{
 		isDragging_ = true;
 		dragPos_ = event->globalPos();
-		if (!(event->modifiers() & Qt::ControlModifier)) selectionModel_->reset();
+		if (!(event->modifiers() & Qt::ControlModifier)) delegate_->resetSelection();
 	}
 }
 
@@ -96,26 +97,26 @@ void KeyframeTreeView::mouseMoveEvent(QMouseEvent* event)
 		rubberBand_->show();
 
 		auto globalRect = QRect(dragPos_, event->globalPos()).normalized();
-		for (auto&& nodeWidget : delegate_->nodes())
+		for (auto&& widget : delegate_->widgets())
 		{
-			auto area = nodeWidget->area();
+			auto area = widget->area();
+			if (!area) continue;
 			auto globalNodeRect = QRect(0, 0, area->width(), area->height()).translated(area->parentWidget()->mapToGlobal(area->pos()));
 
-			auto node = nodeWidget->node();
 			if (globalRect.intersects(globalNodeRect))
 			{
-				if (!selectionModel_->isSelected(node))
+				if (!delegate_->isSelected(widget))
 				{
-					nodesDragSelected_.insert(node);
-					selectionModel_->setSelected(node, true);
+					dragSelected_.insert(widget);
+					delegate_->setSelected(widget, true);
 				}
 			}
 			else
 			{
-				if (nodesDragSelected_.find(node) != end(nodesDragSelected_))
+				if (dragSelected_.find(widget) != end(dragSelected_))
 				{
-					nodesDragSelected_.erase(node);
-					selectionModel_->setSelected(node, false);
+					dragSelected_.erase(widget);
+					delegate_->setSelected(widget, false);
 				}
 			}
 		}

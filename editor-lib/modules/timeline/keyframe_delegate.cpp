@@ -1,7 +1,6 @@
 #include <core/node.h>
 #include <core/project.h>
 #include "keyframe_delegate.h"
-#include "keyframe_selectionmodel.h"
 #include "model.h"
 
 using Core::Document;
@@ -11,10 +10,10 @@ using Core::NodePtr;
 using Core::Project;
 using Core::Property;
 using Core::PropertyPtr;
+using Editor::Modules::Timeline::KeyframeWidget;
 using Editor::Modules::Timeline::KeyframeNodeWidget;
 using Editor::Modules::Timeline::KeyframePropertyWidget;
 using Editor::Modules::Timeline::KeyframeDelegate;
-using Editor::Modules::Timeline::KeyframeSelectionModel;
 using Editor::Modules::Timeline::Model;
 using ModelItemRoles = Model::ModelItemRoles;
 using ModelItemDataType = Model::ModelItemDataType;
@@ -151,9 +150,13 @@ private:
 	bool isClicking_ {};
 };
 
-KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& project, const Model& model, const KeyframeSelectionModel& selectionModel, NodePtr node, QWidget* parent)
+KeyframeWidget::KeyframeWidget(KeyframeDelegate& kd, Project& project, const Model& model, QWidget* parent)
 	: QWidget(parent)
 	, model_(model)
+{}
+
+KeyframeNodeWidget::KeyframeNodeWidget(KeyframeDelegate& kd, Project& project, const Model& model, QWidget* parent, NodePtr node)
+	: KeyframeWidget(kd, project, model, parent)
 	, node_(node)
 {
 	setFixedWidth(1000);
@@ -199,7 +202,7 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 
 	///
 
-	auto clicked = [&](bool multiSelect) { emit kd.clicked(node_, multiSelect); };
+	auto clicked = [&](bool multiSelect) { emit kd.clicked(this, multiSelect); };
 
 	auto dragged = [this, &kd, restrictOffset](WhichHandle which, const int offsetX)
 	{
@@ -220,24 +223,24 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 		}
 		
 		restricted = restrictOffset(offset, which == WhichHandle::Both);
-		emit kd.dragStart(node_, restricted);
+		emit kd.dragMoving(this, restricted);
 	};
 
 	auto released = [this, &kd]()
 	{
 		auto vis = node_->visibility();
-		emit kd.dragStop(node_);
+		emit kd.dragEnded(this);
 	};
 
-	auto hovered = [this, &selectionModel, updateSelectionArea](bool over)
+	auto hovered = [this, &kd, updateSelectionArea](bool over)
 	{
-		updateSelectionArea(selectionModel.isSelected(node_), over);
+		updateSelectionArea(kd.isSelected(this), over);
 	};
 
 	///
 
 	area_ = new SelectionArea(this, clicked, dragged, released, hovered);
-	updateSelectionArea(selectionModel.isSelected(node));
+	updateSelectionArea(kd.isSelected(this));
 	area_->show();
 
 	startHandle_ = new DragHandle(area_, WhichHandle::Start, dragged, released);
@@ -247,15 +250,17 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 	startHandle_->show();
 	stopHandle_->show();
 
-	connect(&selectionModel, &KeyframeSelectionModel::selectionChanged, this, [this, updateSelectionArea](NodePtr n, bool selected)
+	connect(&kd, &KeyframeDelegate::selectionChanged, this, [this, updateSelectionArea](KeyframeWidget* w, bool selected)
 	{
-		if (n != node_) return;
+		auto wn = qobject_cast<KeyframeNodeWidget*>(w);
+		if (!wn || wn->node() != node_) return;
 		updateSelectionArea(selected);
 	});
 
-	connect(&selectionModel, &KeyframeSelectionModel::selectionMoved, this, [this, updateGeometry, restrictOffset](NodePtr n, Core::visibility_t offsets)
+	connect(&kd, &KeyframeDelegate::selectionMoved, this, [this, updateGeometry, restrictOffset](KeyframeWidget* w, Core::visibility_t offsets)
 	{
-		if (n != node_) return;
+		auto wn = qobject_cast<KeyframeNodeWidget*>(w);
+		if (!wn || wn->node() != node_) return;
 		offsets = restrictOffset(offsets, false);
 		start_ += offsets.first;
 		stop_ += offsets.second;
@@ -285,9 +290,8 @@ KeyframeNodeWidget::KeyframeNodeWidget(const KeyframeDelegate& kd, Project& proj
 
 ///
 
-KeyframePropertyWidget::KeyframePropertyWidget(const Model& model, PropertyPtr prop, QWidget* parent)
-	: QWidget(parent)
-	, model_(model)
+KeyframePropertyWidget::KeyframePropertyWidget(KeyframeDelegate& kd, Project& project, const Model& model, QWidget* parent, PropertyPtr prop)
+	: KeyframeWidget(kd, project, model, parent)
 	, prop_(prop)
 {
 	auto update = [=](PropertyPtr prevProperty, PropertyPtr curProperty)
@@ -302,11 +306,10 @@ KeyframePropertyWidget::KeyframePropertyWidget(const Model& model, PropertyPtr p
 
 ///
 
-KeyframeDelegate::KeyframeDelegate(Project& project, const QSortFilterProxyModel& proxy, const Model& model, const KeyframeSelectionModel& selectionModel)
+KeyframeDelegate::KeyframeDelegate(Project& project, const QSortFilterProxyModel& proxy, const Model& model)
 	: project_(project)
 	, proxy_(proxy)
 	, model_(model)
-	, selectionModel_(selectionModel)
 {
 }
 
@@ -314,44 +317,59 @@ QWidget* KeyframeDelegate::createEditor(QWidget* parent, const QStyleOptionViewI
 {
 	auto type = static_cast<ModelItemDataType>(proxy_.data(index, static_cast<int>(ModelItemRoles::Type)).value<int>());
 
+	KeyframeWidget* widget {};
 	switch (type)
 	{
 	case ModelItemDataType::Node:
-	{
-		auto widget = new KeyframeNodeWidget(*this, project_, model_, selectionModel_, proxy_.data(index, static_cast<int>(ModelItemRoles::Data)).value<NodePtr>(), parent);
-		nodes_.insert(widget);
-		return widget;
-	}
+		widget = new KeyframeNodeWidget(const_cast<KeyframeDelegate&>(*this), project_, model_, parent, proxy_.data(index, static_cast<int>(ModelItemRoles::Data)).value<NodePtr>());
+		break;
 	case ModelItemDataType::Property:
-	{
-		auto widget = new KeyframePropertyWidget(model_, proxy_.data(index, static_cast<int>(ModelItemRoles::Data)).value<PropertyPtr>(), parent);
-		properties_.insert(widget);
-		return widget;
-	}
+		widget = new KeyframePropertyWidget(const_cast<KeyframeDelegate&>(*this), project_, model_, parent, proxy_.data(index, static_cast<int>(ModelItemRoles::Data)).value<PropertyPtr>());
+		break;
 	}
 
-	return nullptr;
+	widgets_.insert(widget);
+	return widget;
 }
 
 void KeyframeDelegate::destroyEditor(QWidget* editor, const QModelIndex& index) const
 {
-	auto node = qobject_cast<KeyframeNodeWidget*>(editor);
-
-	if (node) nodes_.erase(node);
-	else
-	{
-		auto prop = qobject_cast<KeyframePropertyWidget*>(editor);
-		assert(prop); // if it wasn't a node, it has to be a property
-		properties_.erase(prop);
-	}
+	widgets_.erase(qobject_cast<KeyframeWidget*>(editor));
 	QStyledItemDelegate::destroyEditor(editor, index);
 }
 
 const KeyframeNodeWidget* KeyframeDelegate::findByNode(NodePtr node) const noexcept
 {
-	for (auto&& w : nodes_)
+	for (auto&& w : widgets_)
 	{
-		if (w->node() == node) return w;
+		auto wn = qobject_cast<KeyframeNodeWidget*>(w);
+		if (wn && wn->node() == node) return wn;
 	}
 	return nullptr;
+}
+
+void KeyframeDelegate::resetSelection()
+{
+	while (!selected_.empty()) setSelected(*begin(selected_), false);
+}
+
+void KeyframeDelegate::setSelected(KeyframeWidget* widget, bool selected)
+{
+	if (selected)
+	{
+		if (selected_.find(widget) != end(selected_)) return;
+		selected_.insert(widget);
+		emit selectionChanged(widget, true);
+	}
+	else
+	{
+		if (selected_.find(widget) == end(selected_)) return;
+		selected_.erase(widget);
+		emit selectionChanged(widget, false);
+	}
+}
+
+bool KeyframeDelegate::isSelected(KeyframeWidget* widget) const
+{
+	return selected_.find(widget) != end(selected_);
 }
