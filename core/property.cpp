@@ -118,6 +118,13 @@ PropertyValue Property::getPropertyValue(Frame frame) const noexcept
 	return eggs::variants::apply<PropertyValue>(interpolator, prev->second);
 }
 
+std::vector<Frame> Property::keys() const noexcept
+{
+	std::vector<Frame> result;
+	for (auto&& kvp : impl_->keys_) result.push_back(kvp.first);
+	return result;
+}
+
 const PropertyMetadata& Property::metadata() const noexcept
 {
 	return *impl_->metadata_;

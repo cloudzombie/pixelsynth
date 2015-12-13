@@ -55,6 +55,7 @@ public:
 	}
 
 	PropertyValue getPropertyValue(Frame frame) const noexcept;
+	std::vector<Frame> keys() const noexcept;
 
 	const PropertyMetadata& metadata() const noexcept;
 	bool samePropertyHash(const PropertyPtr other) const noexcept;

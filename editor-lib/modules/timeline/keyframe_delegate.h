@@ -7,6 +7,7 @@ BEGIN_NAMESPACE(Editor) BEGIN_NAMESPACE(Modules) BEGIN_NAMESPACE(Timeline)
 class Model;
 class KeyframeDelegate;
 class KeyframeWidget;
+class PropertyKey;
 
 class KeyframeEditor: public QWidget
 {
@@ -15,7 +16,7 @@ class KeyframeEditor: public QWidget
 public:
 	KeyframeEditor(QWidget* parent);
 
-	virtual const std::vector<KeyframeWidget*> widgets() const = 0;
+	virtual const std::unordered_set<KeyframeWidget*> widgets() const = 0;
 	virtual void applyMutation(Core::Document::Builder& mut) = 0;
 
 protected:
@@ -27,13 +28,18 @@ class KeyframeWidget: public QWidget
 	Q_OBJECT
 
 public:
-	KeyframeWidget(QWidget* parent);
+	KeyframeWidget(KeyframeEditor* editor, QWidget* parent);
 
 	virtual void setSelected(bool selected) = 0;
-	KeyframeEditor* editor() const { return qobject_cast<KeyframeEditor*>(parentWidget()); }
+	bool isSelected() const noexcept { return selected_; }
+
+	KeyframeEditor* editor() const noexcept { return editor_; }
 
 protected:
 	void paintEvent(QPaintEvent* pe) override;
+
+	bool selected_ {};
+	KeyframeEditor* editor_;
 };
 
 class KeyframeNodeEditor: public KeyframeEditor
@@ -43,7 +49,7 @@ class KeyframeNodeEditor: public KeyframeEditor
 public:
 	explicit KeyframeNodeEditor(KeyframeDelegate& kd, Core::Project& project, const Model& model, QWidget* parent, Core::NodePtr node);
 
-	const std::vector<KeyframeWidget*> widgets() const override { return { area_ }; }
+	const std::unordered_set<KeyframeWidget*> widgets() const override { return { area_ }; }
 
 private:
 	void applyMutation(Core::Document::Builder& mut);
@@ -64,11 +70,13 @@ class KeyframePropertyEditor: public KeyframeEditor
 public:
 	explicit KeyframePropertyEditor(KeyframeDelegate& kd, Core::Project& project, const Model& model, QWidget* parent, Core::PropertyPtr prop);
 
-	const std::vector<KeyframeWidget*> widgets() const override { return {}; }
+	const std::unordered_set<KeyframeWidget*> widgets() const override { return keys_; }
 	void applyMutation(Core::Document::Builder& mut) {}
 
 private:
 	Core::PropertyPtr prop_;
+	QWidget* propertyArea_;
+	std::unordered_set<KeyframeWidget*> keys_;
 };
 
 class KeyframeDelegate: public QStyledItemDelegate
@@ -78,8 +86,8 @@ class KeyframeDelegate: public QStyledItemDelegate
 public:
 	explicit KeyframeDelegate(Core::Project& project, const QSortFilterProxyModel& proxy, const Model& model);
 
-	const std::unordered_set<KeyframeWidget*> widgets() const { return widgets_; }
-	const std::unordered_set<KeyframeWidget*> selected() const { return selected_; }
+	const std::unordered_set<KeyframeWidget*> widgets() const;
+	const std::unordered_set<KeyframeWidget*> selected() const;
 
 	void resetSelection();
 	void setSelected(KeyframeWidget* widget, bool selected);
@@ -100,8 +108,7 @@ private:
 	const QSortFilterProxyModel& proxy_;
 	const Model& model_;
 
-	mutable std::unordered_set<KeyframeWidget*> widgets_;
-	std::unordered_set<KeyframeWidget*> selected_;
+	mutable std::unordered_set<KeyframeEditor*> editors_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline)

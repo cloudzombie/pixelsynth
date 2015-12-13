@@ -98,9 +98,18 @@ void Widget::mutate()
 	switch (mutationIndex++)
 	{
 	case 0:
-		p.mutate([&](auto& mut)
-		{
-			mut.append({ makeNode(hash("DummyNode"), "a") });
+		p.mutate({
+			[&](Document::Builder& mut) {
+				mut.append({ makeNode(hash("DummyNode"), "a") });
+			},
+			[&](Document::Builder& mut) {
+				mut.mutate(findNode(p, "a"), [&](Node::Builder& node) {
+					node.mutateProperty(hash("Vec3"), [&](Property::Builder& prop) {
+						prop.set(0, glm::vec3(1, 2, 3));
+						prop.set(100, glm::vec3(100, 200, 300));
+					});
+				});
+			}
 		}, "create node");
 		break;
 	case 1:

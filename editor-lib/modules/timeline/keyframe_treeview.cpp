@@ -63,7 +63,7 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 
 void KeyframeTreeView::drawRow(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
-	QTreeView::drawRow(painter, option, index);
+	//QTreeView::drawRow(painter, option, index);
 }
 
 void KeyframeTreeView::mousePressEvent(QMouseEvent* event)
@@ -84,9 +84,12 @@ void KeyframeTreeView::mouseMoveEvent(QMouseEvent* event)
 		rubberBand_->show();
 
 		auto globalRect = QRect(dragPos_, event->globalPos()).normalized();
+		auto w = delegate_->widgets();
+		LOG->info("total widgets: {}", w.size());
 		for (auto&& widget : delegate_->widgets())
 		{
 			auto globalNodeRect = QRect(0, 0, widget->width(), widget->height()).translated(widget->parentWidget()->mapToGlobal(widget->pos()));
+			LOG->info("rect: ({}, {}) -- ({}, {})", globalNodeRect.topLeft().x(), globalNodeRect.topLeft().y(), globalNodeRect.bottomRight().x(), globalNodeRect.bottomRight().y());
 
 			if (globalRect.intersects(globalNodeRect))
 			{

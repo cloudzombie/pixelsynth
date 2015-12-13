@@ -16,6 +16,7 @@ using Editor::Modules::Timeline::KeyframeNodeEditor;
 using Editor::Modules::Timeline::KeyframePropertyEditor;
 using Editor::Modules::Timeline::KeyframeDelegate;
 using Editor::Modules::Timeline::Model;
+using Editor::Modules::Timeline::PropertyKey;
 using ModelItemRoles = Model::ModelItemRoles;
 using ModelItemDataType = Model::ModelItemDataType;
 
@@ -82,8 +83,8 @@ private:
 class SelectionArea: public KeyframeWidget
 {
 public:
-	SelectionArea(QWidget* parent, clicked_fn_t clickedFn, dragged_fn_t draggedFn, released_fn_t releasedFn)
-		: KeyframeWidget(parent)
+	SelectionArea(KeyframeEditor* editor, QWidget* parent, clicked_fn_t clickedFn, dragged_fn_t draggedFn, released_fn_t releasedFn)
+		: KeyframeWidget(editor, parent)
 		, clickedFn_(clickedFn)
 		, draggedFn_(draggedFn)
 		, releasedFn_(releasedFn)
@@ -167,12 +168,11 @@ private:
 	int dragX_;
 	bool isDragging_ {};
 	bool isClicking_ {};
-
-	bool selected_ {};
 };
 
-KeyframeWidget::KeyframeWidget(QWidget* parent)
+KeyframeWidget::KeyframeWidget(KeyframeEditor* editor, QWidget* parent)
 	: QWidget(parent)
+	, editor_(editor)
 {
 }
 
@@ -273,7 +273,7 @@ KeyframeNodeEditor::KeyframeNodeEditor(KeyframeDelegate& kd, Project& project, c
 
 	///
 
-	area_ = new SelectionArea(this, clicked, dragged, released);
+	area_ = new SelectionArea(this, this, clicked, dragged, released);
 	area_->setSelected(kd.isSelected(area_));
 	area_->show();
 
@@ -329,16 +329,92 @@ void KeyframeNodeEditor::applyMutation(Core::Document::Builder& mut)
 
 ///
 
+class PropertyKey: public KeyframeWidget
+{
+public:
+	PropertyKey(KeyframeEditor* editor, QWidget* parent)
+		: KeyframeWidget(editor, parent)
+	{
+		setFixedSize(24, 24);
+		setMouseTracking(true);
+	}
+
+private:
+	void setSelected(bool selected) override
+	{
+		selected_ = selected;
+		update();
+	}
+
+	void paintEvent(QPaintEvent* event) override
+	{
+		QPainter painter(this);
+		painter.setRenderHint(QPainter::Antialiasing);
+		
+		painter.setPen(Qt::NoPen);
+		painter.setBrush(selected_ ? QColor(200, 200, 200) : QColor(160, 160, 160));
+
+		auto center = QPoint(width() * 0.5f, height() * 0.5f);
+		auto size = QPoint(width() * 0.25f, height() * 0.25f);
+		painter.drawEllipse(center, size.x(), size.y());
+	}
+};
+
 KeyframePropertyEditor::KeyframePropertyEditor(KeyframeDelegate& kd, Project& project, const Model& model, QWidget* parent, PropertyPtr prop)
 	: KeyframeEditor(parent)
 	, prop_(prop)
+	, propertyArea_(new QWidget(this))
 {
+	propertyArea_->setStyleSheet("background-color: #445");
+
 	auto update = [=](PropertyPtr prevProperty, PropertyPtr curProperty)
 	{
 		if (prevProperty != prop_) return;
 		prop_ = curProperty;
+
+		for (auto&& keyWidget : keys_) keyWidget->deleteLater();
+		keys_.clear();
+
+		auto node = project.current().parent(*prop_);
+		if (!node) return;
+
+		for (auto&& frame : curProperty->keys())
+		{
+			auto keyWidget = new PropertyKey(this, propertyArea_);
+			keyWidget->move(frame - keyWidget->width() / 2, 0);
+			keyWidget->show();
+			keys_.insert(keyWidget);
+		}
 	};
 	connect(&model, &Model::modelItemPropertyMutated, this, update);
+
+	///
+
+	connect(&kd, &KeyframeDelegate::selectionChanged, this, [this](KeyframeWidget* w, bool selected)
+	{
+		auto it = keys_.find(w);
+		if (it == end(keys_)) return;
+		(*it)->setSelected(selected);
+	});
+
+	///
+
+	auto updateDocument = [this, update](const Document* prev, const Document* cur)
+	{
+		auto vis = cur->settings().visibility;
+		setFixedWidth(vis.second - vis.first);
+		propertyArea_->setFixedWidth(vis.second - vis.first);
+
+		// PropertyArea should encompass node, except when there is no node visibility
+		auto node = cur->parent(*prop_);
+		if (node) vis = node->visibility();
+		propertyArea_->setFixedWidth(vis.second - vis.first);
+		propertyArea_->move(vis.first, propertyArea_->pos().y());
+
+		update(prop_, prop_);
+	};
+	connect(&model, &Model::documentMutated, this, updateDocument);
+	updateDocument(&project.current(), &project.current());
 }
 
 ///
@@ -369,40 +445,61 @@ QWidget* KeyframeDelegate::createEditor(QWidget* parent, const QStyleOptionViewI
 	}
 	}
 
-	for (auto&& w : editor->widgets()) widgets_.insert(w);
+	editors_.insert(editor);
 	return editor;
 }
 
 void KeyframeDelegate::destroyEditor(QWidget* editor, const QModelIndex& index) const
 {
-	auto ke = qobject_cast<KeyframeEditor*>(editor);
-	for (auto&& w : ke->widgets()) widgets_.erase(w);
-
+	editors_.erase(qobject_cast<KeyframeEditor*>(editor));
 	QStyledItemDelegate::destroyEditor(editor, index);
 }
 
 void KeyframeDelegate::resetSelection()
 {
-	while (!selected_.empty()) setSelected(*begin(selected_), false);
+	for (auto&& widget : selected()) emit selectionChanged(widget, false);
 }
 
 void KeyframeDelegate::setSelected(KeyframeWidget* widget, bool selected)
 {
+	auto s = this->selected();
 	if (selected)
 	{
-		if (selected_.find(widget) != end(selected_)) return;
-		selected_.insert(widget);
+		if (s.find(widget) != end(s)) return;
 		emit selectionChanged(widget, true);
 	}
 	else
 	{
-		if (selected_.find(widget) == end(selected_)) return;
-		selected_.erase(widget);
+		if (s.find(widget) == end(s)) return;
 		emit selectionChanged(widget, false);
 	}
 }
 
 bool KeyframeDelegate::isSelected(KeyframeWidget* widget) const
 {
-	return selected_.find(widget) != end(selected_);
+	auto s = selected();
+	return s.find(widget) != end(s);
+}
+
+const std::unordered_set<KeyframeWidget*> KeyframeDelegate::widgets() const
+{
+	std::unordered_set<KeyframeWidget*> result;
+	for (auto&& editor : editors_)
+	{
+		for (auto&& widget : editor->widgets()) result.insert(widget);
+	}
+	return result;
+}
+
+const std::unordered_set<KeyframeWidget*> KeyframeDelegate::selected() const
+{
+	std::unordered_set<KeyframeWidget*> result;
+	for (auto&& editor : editors_)
+	{
+		for (auto&& widget : editor->widgets())
+		{
+			if (widget->isSelected()) result.insert(widget);
+		}
+	}
+	return result;
 }
