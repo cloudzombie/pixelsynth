@@ -17,12 +17,11 @@ using Editor::Modules::Timeline::KeyframePropertyEditor;
 using Editor::Modules::Timeline::KeyframeDelegate;
 using Editor::Modules::Timeline::Model;
 using Editor::Modules::Timeline::PropertyKey;
+using Editor::Modules::Timeline::WhichHandle;
 using ModelItemRoles = Model::ModelItemRoles;
 using ModelItemDataType = Model::ModelItemDataType;
 
 ///
-
-enum class WhichHandle { Start, Stop, Both };
 
 using clicked_fn_t = std::function<void(bool)>;
 using dragged_fn_t = std::function<void(WhichHandle, const int)>;
@@ -207,43 +206,30 @@ KeyframeNodeEditor::KeyframeNodeEditor(KeyframeDelegate& kd, Project& project, c
 	: KeyframeEditor(parent)
 	, node_(node)
 {
-	auto updateGeometry = [this]()
+	document_ = &project.current();
+
+	auto updateGeometry = [this, project]()
 	{
-		area_->setFixedWidth(stop_ - start_);
-		area_->move(start_, area_->pos().y());
-		startHandle_->move(0 - startHandle_->width() * 0.5, 0);
-		stopHandle_->move(area_->width() - stopHandle_->width() * 0.5, 0);
-	};
-
-	auto restrictOffset = [this, &project](Core::visibility_t offset, bool limitEquallyMinimal) -> auto
-	{
-		auto docVis = project.current().settings().visibility;
-
-		Frame nStart = start_ + offset.first;
-		Frame nStop = stop_ + offset.second;
-
-		Frame dStart = 0, dStop = 0;
-
-		if (nStart < docVis.first) dStart -= (nStart - docVis.first);
-		if (nStop > docVis.second) dStop -= (nStop - docVis.second);
-
-		if (limitEquallyMinimal)
+		Frame parentOffset = 0;
+		auto parent = document_->parent(*node_);
+		if (parent != project.root())
 		{
-			if (-dStop > dStart) dStart = dStop;
-			else if (dStart > -dStop) dStop = dStart;
+			Frame parentStart_, parentStop_;
+			std::tie(parentStart_, parentStop_) = parent->visibility();
+			parentOffset = parentStart_;
 		}
 
-		offset.first += dStart;
-		offset.second += dStop;
-
-		return offset;
+		area_->setFixedWidth(stop_ - start_);
+		area_->move(start_ + parentOffset, area_->pos().y());
+		startHandle_->move(0 - startHandle_->width() * 0.5, 0);
+		stopHandle_->move(area_->width() - stopHandle_->width() * 0.5, 0);
 	};
 
 	///
 
 	auto clicked = [&](bool multiSelect) { emit kd.clicked(area_, multiSelect); };
 
-	auto dragged = [this, &kd, restrictOffset](WhichHandle which, const int offsetX)
+	auto dragged = [this, &kd](WhichHandle which, const int offsetX)
 	{
 		Core::Frame offsetFrames = offsetX;
 		Core::visibility_t offset, restricted;
@@ -261,8 +247,8 @@ KeyframeNodeEditor::KeyframeNodeEditor(KeyframeDelegate& kd, Project& project, c
 			break;
 		}
 		
-		restricted = restrictOffset(offset, which == WhichHandle::Both);
-		emit kd.dragMoving(area_, restricted);
+		dragType_ = which;
+		emit kd.dragMoving(area_, offset);
 	};
 
 	auto released = [this, &kd]()
@@ -290,7 +276,7 @@ KeyframeNodeEditor::KeyframeNodeEditor(KeyframeDelegate& kd, Project& project, c
 		area_->setSelected(selected);
 	});
 
-	connect(&kd, &KeyframeDelegate::selectionMoved, this, [this, updateGeometry, restrictOffset](KeyframeWidget* w, Core::visibility_t offsets)
+	connect(&kd, &KeyframeDelegate::selectionMoved, this, [this, updateGeometry](KeyframeWidget* w, Core::visibility_t offsets)
 	{
 		if (w != area_) return;
 		start_ += offsets.first;
@@ -313,10 +299,10 @@ KeyframeNodeEditor::KeyframeNodeEditor(KeyframeDelegate& kd, Project& project, c
 	{
 		auto vis = cur->settings().visibility;
 		setFixedWidth(vis.second - vis.first);
-		updateNode(node_, node_);
+		document_ = cur;
 	};
 	connect(&model, &Model::documentMutated, this, updateDocument);
-	updateDocument(&project.current(), &project.current());
+	updateDocument(document_, document_);
 }
 
 void KeyframeNodeEditor::applyMutation(Core::Document::Builder& mut)
@@ -325,6 +311,27 @@ void KeyframeNodeEditor::applyMutation(Core::Document::Builder& mut)
 	{
 		builder.mutateVisibility({ start_, stop_ });
 	});
+
+	for (size_t t = 0; t < document_->childCount(*node_); t++)
+	{
+		auto&& child = document_->child(*node_, t);
+		auto vis = child->visibility();
+
+		if (dragType_ == WhichHandle::Start)
+		{
+			auto startTrim = start_ - node_->visibility().first;
+			vis.first -= startTrim;
+			vis.second -= startTrim;
+		}
+
+		if (vis != child->visibility())
+		{
+			mut.mutate(child, [&](auto& builder)
+			{
+				builder.mutateVisibility(vis);
+			});
+		}
+	}
 };
 
 ///

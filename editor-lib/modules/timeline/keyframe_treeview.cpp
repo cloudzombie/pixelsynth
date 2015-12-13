@@ -56,7 +56,14 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 			auto widgets = delegate_->selected();
 			widgets.insert(widget);
 
-			for (auto&& w : widgets) w->editor()->applyMutation(mut);
+			// Apply the mutations in document order, not particularly efficient, meh
+			for (auto&& node : project.current().nodes())
+			{
+				for (auto&& w : widgets)
+				{
+					if (w->editor()->node() == node) w->editor()->applyMutation(mut);
+				}
+			}
 		}, "Change visibility");
 	});
 }

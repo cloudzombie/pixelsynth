@@ -9,6 +9,8 @@ class KeyframeDelegate;
 class KeyframeWidget;
 class PropertyKey;
 
+enum class WhichHandle { Start, Stop, Both };
+
 class KeyframeEditor: public QWidget
 {
 	Q_OBJECT
@@ -58,6 +60,7 @@ public:
 private:
 	void applyMutation(Core::Document::Builder& mut);
 
+	const Core::Document* document_;
 	Core::NodePtr node_;
 
 	KeyframeWidget* area_;
@@ -65,6 +68,7 @@ private:
 	QWidget* stopHandle_;
 	Core::Frame start_;
 	Core::Frame stop_;
+	WhichHandle dragType_;
 };
 
 class KeyframePropertyEditor: public KeyframeEditor
