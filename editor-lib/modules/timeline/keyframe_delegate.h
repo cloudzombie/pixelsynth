@@ -19,6 +19,9 @@ public:
 	virtual const std::unordered_set<KeyframeWidget*> widgets() const = 0;
 	virtual void applyMutation(Core::Document::Builder& mut) = 0;
 
+	virtual Core::NodePtr node() const { return nullptr; }
+	virtual Core::PropertyPtr property() const { return nullptr; }
+
 protected:
 	void paintEvent(QPaintEvent* pe) override;
 };
@@ -50,6 +53,7 @@ public:
 	explicit KeyframeNodeEditor(KeyframeDelegate& kd, Core::Project& project, const Model& model, QWidget* parent, Core::NodePtr node);
 
 	const std::unordered_set<KeyframeWidget*> widgets() const override { return { area_ }; }
+	Core::NodePtr node() const override { return node_; }
 
 private:
 	void applyMutation(Core::Document::Builder& mut);
@@ -72,6 +76,7 @@ public:
 
 	const std::unordered_set<KeyframeWidget*> widgets() const override { return keys_; }
 	void applyMutation(Core::Document::Builder& mut) {}
+	Core::PropertyPtr property() const override { return prop_; }
 
 private:
 	Core::PropertyPtr prop_;
@@ -102,7 +107,6 @@ signals:
 
 private:
 	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
-	void destroyEditor(QWidget* editor, const QModelIndex& index) const override;
 
 	Core::Project& project_;
 	const QSortFilterProxyModel& proxy_;

@@ -445,14 +445,10 @@ QWidget* KeyframeDelegate::createEditor(QWidget* parent, const QStyleOptionViewI
 	}
 	}
 
+	connect(editor, &QObject::destroyed, this, [=](QObject*) { editors_.erase(editor); });
+
 	editors_.insert(editor);
 	return editor;
-}
-
-void KeyframeDelegate::destroyEditor(QWidget* editor, const QModelIndex& index) const
-{
-	editors_.erase(qobject_cast<KeyframeEditor*>(editor));
-	QStyledItemDelegate::destroyEditor(editor, index);
 }
 
 void KeyframeDelegate::resetSelection()
