@@ -1,19 +1,21 @@
 #include <core/node.h>
 #include <core/project.h>
-#include "keyframe_treeview.h"
-#include "keyframe_delegate.h"
-#include "keyframe_header.h"
-#include "model.h"
+#include "tree_view.h"
+#include "delegate.h"
+#include "header.h"
+#include "widget.h"
+#include "../model.h"
 
 using Core::Document;
 using Core::Project;
 using Core::NodePtr;
 using Core::Frame;
-using Editor::Modules::Timeline::KeyframeWidget;
-using Editor::Modules::Timeline::KeyframeTreeView;
+using Editor::Modules::Timeline::Keyframer::Delegate;
+using Editor::Modules::Timeline::Keyframer::Widget;
+using Editor::Modules::Timeline::Keyframer::TreeView;
 using Editor::Modules::Timeline::Model;
 
-KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& proxy, Model& model, QWidget* parent)
+TreeView::TreeView(Project& project, QSortFilterProxyModel& proxy, Model& model, QWidget* parent)
 	: QTreeView(parent)
 	, rubberBand_(new QRubberBand(QRubberBand::Rectangle, this))
 {
@@ -21,11 +23,11 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 	setModel(&proxy);
 	setSelectionMode(QAbstractItemView::NoSelection);
 
-	delegate_ = new KeyframeDelegate(project, proxy, model);
+	delegate_ = new Delegate(project, proxy, model);
 	setItemDelegateForColumn(static_cast<int>(Model::Columns::Item), delegate_);
-	setHeader(new KeyframeHeader(model, this));
+	setHeader(new Header(model, this));
 
-	connect(delegate_, &KeyframeDelegate::clicked, this, [&](KeyframeWidget* widget, bool multiSelect)
+	connect(delegate_, &Delegate::clicked, this, [&](Widget* widget, bool multiSelect)
 	{
 		if (!multiSelect)
 		{
@@ -38,7 +40,7 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 		}
 	});
 
-	connect(delegate_, &KeyframeDelegate::dragMoving, this, [&](KeyframeWidget* widget, const Core::visibility_t offsets)
+	/*connect(delegate_, &Delegate::dragMoving, this, [&](Widget* widget, const Core::visibility_t offsets)
 	{
 		auto widgets = delegate_->selected();
 		widgets.insert(widget);
@@ -49,7 +51,7 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 		}
 	});
 
-	connect(delegate_, &KeyframeDelegate::dragEnded, this, [&](KeyframeWidget* widget)
+	connect(delegate_, &Delegate::dragEnded, this, [&](Widget* widget)
 	{
 		project.mutate([&](Document::Builder& mut)
 		{
@@ -65,15 +67,15 @@ KeyframeTreeView::KeyframeTreeView(Project& project, QSortFilterProxyModel& prox
 				}
 			}
 		}, "Change visibility");
-	});
+	});*/
 }
 
-void KeyframeTreeView::drawRow(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
+void TreeView::drawRow(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
 	//QTreeView::drawRow(painter, option, index);
 }
 
-void KeyframeTreeView::mousePressEvent(QMouseEvent* event)
+void TreeView::mousePressEvent(QMouseEvent* event)
 {
 	if (event->button() == Qt::LeftButton)
 	{
@@ -83,14 +85,14 @@ void KeyframeTreeView::mousePressEvent(QMouseEvent* event)
 	}
 }
 
-void KeyframeTreeView::mouseMoveEvent(QMouseEvent* event)
+void TreeView::mouseMoveEvent(QMouseEvent* event)
 {
 	if (isDragging_)
 	{
 		rubberBand_->setGeometry(QRect(mapFromGlobal(dragPos_), mapFromGlobal(event->globalPos())).normalized());
 		rubberBand_->show();
 
-		auto globalRect = QRect(dragPos_, event->globalPos()).normalized();
+		/*auto globalRect = QRect(dragPos_, event->globalPos()).normalized();
 		auto w = delegate_->widgets();
 		LOG->info("total widgets: {}", w.size());
 		for (auto&& widget : delegate_->widgets())
@@ -114,11 +116,11 @@ void KeyframeTreeView::mouseMoveEvent(QMouseEvent* event)
 					delegate_->setSelected(widget, false);
 				}
 			}
-		}
+		}*/
 	}
 }
 
-void KeyframeTreeView::mouseReleaseEvent(QMouseEvent* event)
+void TreeView::mouseReleaseEvent(QMouseEvent* event)
 {
 	if (event->button() == Qt::LeftButton)
 	{

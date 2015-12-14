@@ -5,10 +5,12 @@ BEGIN_NAMESPACE(Editor) BEGIN_NAMESPACE(Modules) BEGIN_NAMESPACE(Timeline)
 
 class Model;
 
-class KeyframeHeader: public QHeaderView
+BEGIN_NAMESPACE(Keyframer)
+
+class Header: public QHeaderView
 {
 public:
-	explicit KeyframeHeader(const Model& model, QWidget* parent);
+	explicit Header(const Model& model, QWidget* parent);
 
 private:
 	void update();
@@ -18,4 +20,4 @@ private:
 	QWidget* widget_;
 };
 
-END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline)
+END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline) END_NAMESPACE(Keyframer)

@@ -1,13 +1,12 @@
 #include "widget.h"
 #include "model.h"
-#include "keyframe_treeview.h"
+#include "keyframer/tree_view.h"
 #include "../property_editors/delegate.h"
 
 #include <core/utils.h>
 #include <core/mutation_info.h>
 
 using Editor::Modules::Timeline::Widget;
-using Editor::Modules::Timeline::KeyframeTreeView;
 
 using namespace Core;
 
@@ -25,7 +24,7 @@ Widget::Widget(QWidget* parent, Project& project)
 
 	proxy_->setSourceModel(model_.get());
 
-	keyframer_ = new KeyframeTreeView(project, *proxy_, *model_, this);
+	keyframer_ = new Keyframer::TreeView(project, *proxy_, *model_, this);
 
 	splitter_->addWidget(tree_);
 	splitter_->addWidget(keyframer_);

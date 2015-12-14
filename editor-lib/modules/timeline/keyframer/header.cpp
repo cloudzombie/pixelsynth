@@ -1,13 +1,13 @@
-#include "keyframe_header.h"
-#include "model.h"
+#include "header.h"
+#include "../model.h"
 
 #include <core/document.h>
 
 using Core::Document;
-using Editor::Modules::Timeline::KeyframeHeader;
+using Editor::Modules::Timeline::Keyframer::Header;
 using Editor::Modules::Timeline::Model;
 
-KeyframeHeader::KeyframeHeader(const Model& model, QWidget* parent)
+Header::Header(const Model& model, QWidget* parent)
 	: QHeaderView(Qt::Horizontal, parent)
 	, model_(model)
 	, document_(nullptr)
@@ -31,6 +31,6 @@ KeyframeHeader::KeyframeHeader(const Model& model, QWidget* parent)
 	});
 }
 
-void KeyframeHeader::update()
+void Header::update()
 {
 }
