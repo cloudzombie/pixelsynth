@@ -9,12 +9,17 @@ class Key: public Widget
 	Q_OBJECT
 
 public:
-	Key(RowEditor* editor, QWidget* parent);
+	Key(Core::Frame frame, RowEditor* editor, QWidget* parent);
 
 	void setSelected(bool selected) override;
 
+	void setFrame(Core::Frame frame);
+	Core::Frame frame() const { return frame_; }
+
 private:
 	void paintEvent(QPaintEvent* event) override;
+
+	Core::Frame frame_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline) END_NAMESPACE(Keyframer) END_NAMESPACE(Editors) END_NAMESPACE(Property)

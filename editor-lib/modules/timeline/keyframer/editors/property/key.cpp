@@ -1,19 +1,27 @@
 #include "key.h"
 
+using Core::Frame;
 using Editor::Modules::Timeline::Keyframer::RowEditor;
 using Editor::Modules::Timeline::Keyframer::Widget;
 using Editor::Modules::Timeline::Keyframer::Editors::Property::Key;
 
-Key::Key(RowEditor* editor, QWidget* parent)
+Key::Key(Frame frame, RowEditor* editor, QWidget* parent)
 	: Widget(editor, parent)
 {
 	setFixedSize(24, 24);
+	setFrame(frame);
 }
 
 void Key::setSelected(bool selected)
 {
 	selected_ = selected;
 	update();
+}
+
+void Key::setFrame(Core::Frame frame)
+{
+	frame_ = frame;
+	move(frame_ - (width() / 2), 0);
 }
 
 void Key::paintEvent(QPaintEvent* event)

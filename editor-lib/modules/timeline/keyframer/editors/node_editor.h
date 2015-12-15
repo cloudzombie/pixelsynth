@@ -25,8 +25,12 @@ private:
 	const std::unordered_set<Widget*> widgets() const override;
 	void applyMutation(Core::Document::Builder& mut) override;
 
+	void applyOffset(Widget* widget, Core::Frame offset) override;
+	void applyTrim(Widget* widget, Core::Frame offset, TrimEdge edge) override;
+	void updateNode(Core::NodePtr prevNode, Core::NodePtr curNode);
+	void updateGeometry();
+
 	Core::NodePtr node_;
-	const Core::Document* document_;
 
 	Node::SelectionArea* area_;
 	Node::DragHandle* startHandle_;

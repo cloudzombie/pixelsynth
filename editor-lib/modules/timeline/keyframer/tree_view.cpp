@@ -4,6 +4,7 @@
 #include "delegate.h"
 #include "header.h"
 #include "widget.h"
+#include "row_editor.h"
 #include "../model.h"
 
 using Core::Document;
@@ -40,18 +41,29 @@ TreeView::TreeView(Project& project, QSortFilterProxyModel& proxy, Model& model,
 		}
 	});
 
-	/*connect(delegate_, &Delegate::dragMoving, this, [&](Widget* widget, const Core::visibility_t offsets)
+	connect(delegate_, &Delegate::moved, this, [&](Widget* widget, const Frame offset)
 	{
 		auto widgets = delegate_->selected();
 		widgets.insert(widget);
 
 		for (auto&& w : widgets)
 		{
-			emit delegate_->selectionMoved(w, offsets);
+			w->editor()->applyOffset(w, offset);
 		}
 	});
 
-	connect(delegate_, &Delegate::dragEnded, this, [&](Widget* widget)
+	connect(delegate_, &Delegate::trimmed, this, [&](Widget* widget, const Frame offset, TrimEdge edge)
+	{
+		auto widgets = delegate_->selected();
+		widgets.insert(widget);
+
+		for (auto&& w : widgets)
+		{
+			w->editor()->applyTrim(w, offset, edge);
+		}
+	});
+
+	/*connect(delegate_, &Delegate::dragEnded, this, [&](Widget* widget)
 	{
 		project.mutate([&](Document::Builder& mut)
 		{

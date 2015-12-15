@@ -25,10 +25,16 @@ private:
 	const std::unordered_set<Widget*> widgets() const override;
 	void applyMutation(Core::Document::Builder& mut) override;
 
+	void applyOffset(Widget* widget, Core::Frame offset) override;
+	void applyTrim(Widget* widget, Core::Frame offset, TrimEdge edge) override;
+
+	void updateProperty(Core::PropertyPtr prevProperty, Core::PropertyPtr curProperty);
+	void updateDocument(const Core::Document* prev, const Core::Document* cur);
+
 	Core::PropertyPtr property_;
-	const Core::Document* document_;
 
 	Core::Frame start_, stop_;
+	std::unordered_set<Property::Key*> keys_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline) END_NAMESPACE(Keyframer) END_NAMESPACE(Editors)

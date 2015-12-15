@@ -10,6 +10,8 @@ BEGIN_NAMESPACE(Keyframer)
 class Widget;
 class RowEditor;
 
+enum class TrimEdge { Start, Stop };
+
 class Delegate: public QStyledItemDelegate
 {
 	Q_OBJECT
@@ -26,6 +28,9 @@ public:
 
 signals:
 	void clicked(Widget* widget, bool multiSelect);
+	void moved(Widget* widget, Core::Frame offset);
+	void trimmed(Widget* widget, Core::Frame offset, TrimEdge edge);
+	void released(Widget* widget);
 
 private:
 	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
