@@ -253,7 +253,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 		{
 			// Properties are indexed from 0, but they should always go below the node children of the parent
 			// So increase the row offset by the number of children the parent has
-			row += mutation->cur.childCount(*mutation->cur.parent(*ModelItem::node(parent)));
+			row += mutation->cur.childCount(*ModelItem::node(parent));
 		}
 
 		// When inserting a new item, make sure we above any items that have a higher index in the actual document
