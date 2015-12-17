@@ -37,6 +37,7 @@ public:
 		Builder& operator=(Builder&& rhs);
 
 		void set(Frame frame, PropertyValue value) noexcept;
+		void erase(Frame frame) noexcept;
 
 		void setAnimated(bool animated) noexcept;
 
@@ -55,7 +56,7 @@ public:
 	}
 
 	PropertyValue getPropertyValue(Frame frame) const noexcept;
-	std::vector<Frame> keys() const noexcept;
+	std::set<Frame> keys() const noexcept;
 
 	const PropertyMetadata& metadata() const noexcept;
 	bool samePropertyHash(const PropertyPtr other) const noexcept;

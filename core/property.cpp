@@ -118,10 +118,10 @@ PropertyValue Property::getPropertyValue(Frame frame) const noexcept
 	return eggs::variants::apply<PropertyValue>(interpolator, prev->second);
 }
 
-std::vector<Frame> Property::keys() const noexcept
+std::set<Frame> Property::keys() const noexcept
 {
-	std::vector<Frame> result;
-	for (auto&& kvp : impl_->keys_) result.push_back(kvp.first);
+	std::set<Frame> result;
+	for (auto&& kvp : impl_->keys_) result.insert(kvp.first);
 	return result;
 }
 
@@ -203,6 +203,11 @@ Property& Property::operator=(Builder&& rhs)
 void Builder::set(Frame frame, PropertyValue value) noexcept
 {
 	impl_->keys_[frame] = value;
+}
+
+void Builder::erase(Frame frame) noexcept
+{
+	impl_->keys_.erase(frame);
 }
 
 void Builder::setAnimated(bool animated) noexcept

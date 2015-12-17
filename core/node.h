@@ -8,7 +8,7 @@ BEGIN_NAMESPACE(Core)
 class Node
 {
 public:
-	using properties_t = std::vector<std::shared_ptr<const Property>>;
+	using properties_t = std::vector<PropertyPtr>;
 
 private:
 	struct Impl;
@@ -46,6 +46,7 @@ public:
 
 		void addProperty(PropertyMetadata::Builder&& propertyMetadata) noexcept;
 		void mutateProperty(const HashValue hash, mutate_fn fn) noexcept;
+		void mutateProperty(PropertyPtr prop, mutate_fn fn) noexcept;
 
 		void addConnector(ConnectorMetadata::Builder&& connector) noexcept;
 
