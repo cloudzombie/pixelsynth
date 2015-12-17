@@ -1,11 +1,12 @@
 #include "widget.h"
+#include "row_editor.h"
 
 using Editor::Modules::Timeline::Keyframer::RowEditor;
 using Editor::Modules::Timeline::Keyframer::Widget;
 
-Widget::Widget(RowEditor* editor, QWidget* parent)
+Widget::Widget(RowEditor* parent)
 	: Draggable(parent)
-	, editor_(editor)
+	, editor_(parent)
 {
 }
 

@@ -5,8 +5,8 @@ using Editor::Modules::Timeline::Keyframer::RowEditor;
 using Editor::Modules::Timeline::Keyframer::Widget;
 using Editor::Modules::Timeline::Keyframer::Editors::Node::SelectionArea;
 
-SelectionArea::SelectionArea(RowEditor* editor, QWidget* parent)
-	: Widget(editor, parent)
+SelectionArea::SelectionArea(RowEditor* parent)
+	: Widget(parent)
 {
 	updateColor(false);
 }

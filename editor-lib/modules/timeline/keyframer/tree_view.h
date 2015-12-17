@@ -28,9 +28,6 @@ private:
 
 	QPoint dragPos_;
 	bool isDragging_ {};
-
-	// The widgets that are selected by rubber band drag, but were not selected previously
-	std::unordered_set<Widget*> dragSelected_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline) END_NAMESPACE(Keyframer)

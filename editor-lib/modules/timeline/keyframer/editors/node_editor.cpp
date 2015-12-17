@@ -4,6 +4,7 @@
 #include "../../model.h"
 #include "node/selection_area.h"
 #include "node/drag_handle.h"
+#include "property_editor.h"
 
 #include <core/project.h>
 
@@ -24,7 +25,7 @@ NodeEditor::NodeEditor(Delegate& delegate, Project& project, const Model& model,
 	: RowEditor(delegate, project, model, parent)
 	, node_(node)
 {
-	area_ = new SelectionArea(this, this);
+	area_ = new SelectionArea(this);
 	area_->setSelected(delegate.isSelected(area_));
 	area_->show();
 
@@ -33,12 +34,10 @@ NodeEditor::NodeEditor(Delegate& delegate, Project& project, const Model& model,
 	startHandle_->show();
 	stopHandle_->show();
 
-	connect(area_, &SelectionArea::clicked, this, [&](bool multiSelect) { emit delegate.clicked(area_, multiSelect); });
-	connect(area_, &SelectionArea::dragged, this, [&](int offset) { emit delegate.moved(area_, offset); });
-	connect(area_, &SelectionArea::released, this, [&]() { emit delegate.released(area_); });
-
-	connect(startHandle_, &DragHandle::dragged, this, [&](int offset) { emit delegate.trimmed(area_, offset, TrimEdge::Start); });
-	connect(stopHandle_, &DragHandle::dragged, this, [&](int offset) { emit delegate.trimmed(area_, offset, TrimEdge::Stop); });
+	connect(startHandle_, &DragHandle::dragged, this, [this](int offset) { emit area_->trimmed(offset, TrimEdge::Start); });
+	connect(stopHandle_, &DragHandle::dragged, this, [this](int offset) { emit area_->trimmed(offset, TrimEdge::Stop); });
+	connect(startHandle_, &DragHandle::released, this, [this]() { emit area_->released(); });
+	connect(stopHandle_, &DragHandle::released, this, [this]() { emit area_->released(); });
 
 	///
 
@@ -46,20 +45,45 @@ NodeEditor::NodeEditor(Delegate& delegate, Project& project, const Model& model,
 	updateNode(node_, node_);
 }
 
+void NodeEditor::initializeWidgets()
+{
+	emit widgetCreated(area_);
+}
+
 const std::unordered_set<Widget*> NodeEditor::widgets() const
 {
 	return { area_ };
 }
 
-void NodeEditor::applyOffset(Widget* widget, Frame offset)
+void NodeEditor::applyOffset(Frame offset, std::unordered_set<Widget*>& alreadyProcessed)
 {
+	if (std::find(std::begin(alreadyProcessed), std::end(alreadyProcessed), area_) != end(alreadyProcessed)) return;
+	alreadyProcessed.insert(area_);
+
 	start_ += offset;
 	stop_ += offset;
 	updateGeometry();
+
+	for (auto&& prop : node_->properties())
+	{
+		auto propertyEditor = delegate_.editorFor(prop);
+		propertyEditor->applyOffset(offset, alreadyProcessed, [](Widget* w) { return true; });
+	}
+
+	// Recursively apply to children
+	for (size_t t = 0; t < document_->childCount(*node_); t++)
+	{
+		auto child = document_->child(*node_, t);
+		auto ne = qobject_cast<NodeEditor*>(delegate_.editorFor(child));
+		if (ne) ne->applyOffset(offset, alreadyProcessed);
+	}
 }
 
-void NodeEditor::applyTrim(Widget* widget, Core::Frame offset, TrimEdge edge)
+void NodeEditor::applyTrim(Core::Frame offset, TrimEdge edge, std::unordered_set<Widget*>& alreadyProcessed)
 {
+	if (std::find(std::begin(alreadyProcessed), std::end(alreadyProcessed), area_) != end(alreadyProcessed)) return;
+	alreadyProcessed.insert(area_);
+
 	switch (edge)
 	{
 	case TrimEdge::Start:
@@ -70,6 +94,14 @@ void NodeEditor::applyTrim(Widget* widget, Core::Frame offset, TrimEdge edge)
 		break;
 	}
 	updateGeometry();
+
+	// Recursively apply to children
+	for (size_t t = 0; t < document_->childCount(*node_); t++)
+	{
+		auto child = document_->child(*node_, t);
+		auto ne = qobject_cast<NodeEditor*>(delegate_.editorFor(child));
+		if (ne) ne->applyTrim(offset, edge, alreadyProcessed);
+	}
 }
 
 void NodeEditor::updateNode(NodePtr prevNode, NodePtr curNode)
@@ -89,6 +121,36 @@ void NodeEditor::updateGeometry()
 	stopHandle_->move(area_->width() - stopHandle_->width() * 0.5, 0);
 }
 
-void NodeEditor::applyMutation(Core::Document::Builder& mut)
+bool NodeEditor::isSelected() const
 {
+	return area_->isSelected();
+}
+
+bool NodeEditor::isDirty() const
+{
+	auto startOffset = start_ - node_->visibility().first;
+	auto stopOffset = stop_ - node_->visibility().second;
+
+	if (fabs(startOffset) > 0.01 || fabs(stopOffset) > 0.01) return true;
+
+	for (auto&& prop : node_->properties())
+	{
+		auto propertyEditor = delegate_.editorFor(prop);
+		if (propertyEditor->isDirty()) return true;
+	}
+	return false;
+}
+
+void NodeEditor::applyMutations(Core::Document::Builder& mut)
+{
+	mut.mutate(node_, [&](Core::Node::Builder& builder)
+	{
+		builder.mutateVisibility({ start_, stop_ });
+
+		for (auto&& prop : node_->properties())
+		{
+			auto propertyEditor = delegate_.editorFor(prop);
+			propertyEditor->applyMutations(builder);
+		}
+	});
 }

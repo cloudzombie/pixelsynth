@@ -13,7 +13,7 @@ class SelectionArea: public Widget
 	Q_OBJECT
 
 public:
-	SelectionArea(RowEditor* editor, QWidget* parent);
+	SelectionArea(RowEditor* parent);
 
 	void setSelected(bool selected) override;
 

@@ -150,12 +150,17 @@ void Builder::mutateProperty(const HashValue hash, mutate_fn fn) noexcept
 {
 	auto it = find_if(begin(impl_->properties_), end(impl_->properties_), property_eq_hash(impl_->nodeType_, hash));
 	assert(it != end(impl_->properties_));
+	mutateProperty(*it, fn);
+}
 
-	auto b = Property::Builder(**it);
+void Builder::mutateProperty(PropertyPtr prop, mutate_fn fn) noexcept
+{
+	auto b = Property::Builder(*prop);
 	fn(b);
 
-	impl_->properties_.erase(it);
-	impl_->properties_.insert(it, std::make_shared<Property>(std::move(b)));
+	// Replace property
+	auto it = find(begin(impl_->properties_), end(impl_->properties_), prop);
+	*it = std::make_shared<Property>(std::move(b));
 }
 
 void Builder::addConnector(ConnectorMetadata::Builder&& connector) noexcept

@@ -12,6 +12,11 @@ class RowEditor;
 
 enum class TrimEdge { Start, Stop };
 
+BEGIN_NAMESPACE(Editors)
+class NodeEditor;
+class PropertyEditor;
+END_NAMESPACE(Editors)
+
 class Delegate: public QStyledItemDelegate
 {
 	Q_OBJECT
@@ -19,27 +24,41 @@ class Delegate: public QStyledItemDelegate
 public:
 	explicit Delegate(Core::Project& project, const QSortFilterProxyModel& proxy, const Model& model);
 
-	const std::unordered_set<Widget*> widgets() const;
-	const std::unordered_set<Widget*> selected() const;
+	const std::unordered_set<RowEditor*> editors() const { return editors_; }
 
 	void resetSelection();
 	void setSelected(Widget* widget, bool selected);
 	bool isSelected(Widget* widget) const;
 
-signals:
-	void clicked(Widget* widget, bool multiSelect);
-	void moved(Widget* widget, Core::Frame offset);
-	void trimmed(Widget* widget, Core::Frame offset, TrimEdge edge);
-	void released(Widget* widget);
+	void setRubberBandSelection(QRect globalRect);
+
+	Editors::NodeEditor* editorFor(Core::NodePtr node) const;
+	Editors::PropertyEditor* editorFor(Core::PropertyPtr property) const;
+
+public slots:
+	void widgetCreated(Widget* widget);
+	void widgetClicked(bool multiSelect);
+	void widgetDragged(const int offset);
+	void widgetTrimmed(const int offset, TrimEdge edge);
+	void widgetReleased();
 
 private:
 	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+
+	const std::unordered_set<Widget*> widgets() const;
+	const std::unordered_set<Widget*> selected() const;
+
+	void applyInDocumentOrder(const std::unordered_set<Widget*> widgets, std::function<void(Widget*)> fn) const;
+	const std::unordered_set<Widget*> selectionAnd(Widget* additionalWidget) const;
 
 	Core::Project& project_;
 	const QSortFilterProxyModel& proxy_;
 	const Model& model_;
 
 	mutable std::unordered_set<RowEditor*> editors_;
+
+	// The widgets that are selected by rubber band drag, but were not selected previously
+	std::unordered_set<Widget*> dragSelected_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline) END_NAMESPACE(Keyframer)

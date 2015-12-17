@@ -12,7 +12,7 @@ public:
 
 signals:
 	void clicked(bool multiSelect);
-	void dragged(int offset);
+	void dragged(const int offset);
 	void released();
 
 private:

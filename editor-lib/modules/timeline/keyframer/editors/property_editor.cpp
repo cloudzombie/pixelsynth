@@ -23,6 +23,10 @@ PropertyEditor::PropertyEditor(Delegate& delegate, Project& project, const Model
 	, property_(property)
 {
 	connect(&model, &Model::modelItemPropertyMutated, this, &PropertyEditor::updateProperty);
+}
+
+void PropertyEditor::initializeWidgets()
+{
 	updateProperty(property_, property_);
 }
 
@@ -33,34 +37,70 @@ const std::unordered_set<Widget*> PropertyEditor::widgets() const
 	return result;
 }
 
-void PropertyEditor::applyOffset(Widget* widget, Frame offset)
+void PropertyEditor::applyOffset(Frame offset, std::unordered_set<Widget*>& alreadyProcessed, std::function<bool(Widget*)> pred)
 {
-	auto key = qobject_cast<Key*>(widget);
-	key->setFrame(key->frame() + offset);
-}
+	for (auto&& key : keys_)
+	{
+		if (pred(key))
+		{
+			if (std::find(std::begin(alreadyProcessed), std::end(alreadyProcessed), key) != end(alreadyProcessed)) continue;
 
-void PropertyEditor::applyTrim(Widget* widget, Core::Frame offset, TrimEdge edge)
-{}
+			key->setFrame(key->frame() + offset);
+			alreadyProcessed.insert(key);
+		}
+	}
+}
 
 void PropertyEditor::updateProperty(PropertyPtr prevProperty, PropertyPtr curProperty)
 {
 	if (prevProperty != property_) return;
 	property_ = curProperty;
 
-	for (const auto& key : keys_) delete key;
+	std::vector<bool> wasSelected;
+
+	for (const auto& key : keys_)
+	{
+		wasSelected.push_back(key->isSelected());
+		key->deleteLater();
+	}
 	keys_.clear();
 
+	auto selectIt = begin(wasSelected);
 	for (const auto& frame : property_->keys())
 	{
-		auto key = new Key(frame, this, this);
-		connect(key, &Key::clicked, this, [this, key](bool multiSelect) { emit delegate_.clicked(key, multiSelect); });
-		connect(key, &Key::dragged, this, [this, key](int offset) { emit delegate_.moved(key, offset); });
-		connect(key, &Key::released, this, [this, key]() { emit delegate_.released(key); });
-		keys_.insert(key);
+		auto key = new Key(frame, property_->getPropertyValue(frame), this);
+
+		auto selected = false;
+		if (selectIt != end(wasSelected)) selected = *selectIt++;
+		key->setSelected(selected);
+
+		keys_.emplace_back(key);
+		key->show();
+
+		emit widgetCreated(key);
 	}
 }
 
-
-void PropertyEditor::applyMutation(Core::Document::Builder& mut)
+bool PropertyEditor::isDirty() const
 {
+	for (auto&& key : keys_)
+	{
+		if (key->frame() != key->originalFrame()) return true;
+	}
+	return false;
+}
+
+void PropertyEditor::applyMutations(Core::Node::Builder& builder)
+{
+	if (!isDirty()) return;
+
+	LOG->info("mutating prop: " + property_->metadata().title());
+	builder.mutateProperty(property_, [&](Core::Property::Builder& pb)
+	{
+		for (auto&& key : keys_)
+		{
+			pb.erase(key->originalFrame());
+			pb.set(key->frame(), key->value());
+		}
+	});
 }

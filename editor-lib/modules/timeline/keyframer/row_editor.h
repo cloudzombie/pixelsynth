@@ -22,14 +22,13 @@ public:
 	static RowEditor* makeEditor(Delegate& delegate, Core::Project& project, const Model& model, QWidget* parent, Core::NodePtr node);
 	static RowEditor* makeEditor(Delegate& delegate, Core::Project& project, const Model& model, QWidget* parent, Core::PropertyPtr property);
 
+	virtual void initializeWidgets() = 0;
+
 	virtual const std::unordered_set<Widget*> widgets() const = 0;
-	virtual void applyMutation(Core::Document::Builder& mut) = 0;
+	virtual void applyMutations(Core::Document::Builder& mut, std::unordered_set<Widget*> selected) {};
 
-	virtual void applyOffset(Widget* widget, Core::Frame offset) = 0;
-	virtual void applyTrim(Widget* widget, Core::Frame offset, TrimEdge edge) = 0;
-
-	virtual Core::NodePtr node() const { return nullptr; }
-	virtual Core::PropertyPtr property() const { return nullptr; }
+signals:
+	void widgetCreated(Widget* widget) const;
 
 protected:
 	void paintEvent(QPaintEvent* pe) override;

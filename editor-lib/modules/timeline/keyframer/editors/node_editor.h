@@ -18,15 +18,27 @@ namespace Node { class SelectionArea; class DragHandle; }
 
 class NodeEditor: public RowEditor
 {
+	Q_OBJECT
+
 public:
 	NodeEditor(Delegate& delegate, Core::Project& project, const Model& model, QWidget* parent, Core::NodePtr node);
 
-private:
-	const std::unordered_set<Widget*> widgets() const override;
-	void applyMutation(Core::Document::Builder& mut) override;
+	Core::NodePtr node() const { return node_; }
 
-	void applyOffset(Widget* widget, Core::Frame offset) override;
-	void applyTrim(Widget* widget, Core::Frame offset, TrimEdge edge) override;
+	const std::unordered_set<Widget*> widgets() const override;
+	Widget* widget() const { return *begin(widgets()); }
+
+	bool isSelected() const;
+	bool isDirty() const;
+
+	void applyOffset(Core::Frame offset, std::unordered_set<Widget*>& alreadyProcessed);
+	void applyTrim(Core::Frame offset, TrimEdge edge, std::unordered_set<Widget*>& alreadyProcessed);
+
+	void applyMutations(Core::Document::Builder& mut);
+
+private:
+	void initializeWidgets() override;
+
 	void updateNode(Core::NodePtr prevNode, Core::NodePtr curNode);
 	void updateGeometry();
 

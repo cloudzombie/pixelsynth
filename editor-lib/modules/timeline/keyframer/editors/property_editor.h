@@ -18,15 +18,24 @@ namespace Property { class Key; }
 
 class PropertyEditor: public RowEditor
 {
+	Q_OBJECT
+
 public:
 	PropertyEditor(Delegate& delegate, Core::Project& project, const Model& model, QWidget* parent, Core::PropertyPtr property);
 
-private:
-	const std::unordered_set<Widget*> widgets() const override;
-	void applyMutation(Core::Document::Builder& mut) override;
+	Core::PropertyPtr property() const { return property_; }
 
-	void applyOffset(Widget* widget, Core::Frame offset) override;
-	void applyTrim(Widget* widget, Core::Frame offset, TrimEdge edge) override;
+	bool isDirty() const;
+
+	void applyMutations(Core::Node::Builder& builder);
+
+	void applyOffset(Core::Frame offset, std::unordered_set<Widget*>& alreadyProcessed, std::function<bool(Widget*)> pred);
+	void applySelectionOffset(Core::Frame offset, std::unordered_set<Widget*>& alreadyProcessed);
+
+private:
+	void initializeWidgets() override;
+
+	const std::unordered_set<Widget*> widgets() const override;
 
 	void updateProperty(Core::PropertyPtr prevProperty, Core::PropertyPtr curProperty);
 	void updateDocument(const Core::Document* prev, const Core::Document* cur);
@@ -34,7 +43,7 @@ private:
 	Core::PropertyPtr property_;
 
 	Core::Frame start_, stop_;
-	std::unordered_set<Property::Key*> keys_;
+	std::vector<Property::Key*> keys_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline) END_NAMESPACE(Keyframer) END_NAMESPACE(Editors)
