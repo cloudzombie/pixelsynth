@@ -15,6 +15,24 @@ Editor::Modules::Metadata Editor::Modules::Timeline::registerModule()
 
 	m.setDockWidgetArea(Qt::BottomDockWidgetArea);
 
+	// Cut/copy/paste
+
+	m.addAction<Widget>([&](QObject* app, Widget* widget)
+	{
+		auto action = new QAction(app);
+		action->setSeparator(true);
+		return action;
+	}, "&Redo", ActionFlags::RequiresFocus);
+
+	m.addAction<Widget>([&](QObject* app, Widget* widget)
+	{
+		auto action = new QAction(app->tr("&Cut"), app);
+		action->setShortcuts({ QKeySequence(app->tr("Ctrl+C")) });
+		return action;
+	}, "&Redo", ActionFlags::RequiresFocus);
+
+	// Debug stuff
+
 	m.addAction<Widget>([&](QObject* app, Widget* widget)
 	{
 		auto action = new QAction(app);

@@ -5,16 +5,20 @@
 using Core::Project;
 using Editor::Actions;
 using Editor::Application;
+using Editor::Modules::ActionFlags;
+using Editor::Modules::Metadata;
 
 Application::Application(int argc, char *argv[])
 	: QApplication(argc, argv)
 	, mainWindow_(nullptr)
+	, prevFocus_(nullptr)
 {
 	QFile f(":qdarkstyle/style.qss");
 	f.open(QFile::ReadOnly | QFile::Text);
 	QTextStream ts(&f);
 	setStyleSheet(ts.readAll());
 
+	installEventFilter(this);
 	registerModules();
 	setup();
 }
@@ -35,17 +39,26 @@ void Application::applyModules()
 		auto&& src = metadata.actions();
 		Modules::Metadata::action_list_t reversed_actions(src.size());
 		reverse_copy(begin(src), end(src), begin(reversed_actions));
-		for (auto&& actionPair: reversed_actions)
+		for (auto&& actionItem : reversed_actions)
 		{
-			auto actionFn = actionPair.first;
-			auto action = actionFn(this, widget);
-			addActionAfter(actionPair.second, action);
+			if (actionRequiresFocus(actionItem))
+			{
+				focusActions_[widget].emplace_back(actionItem);
+			}
+			else
+			{
+				addAction(widget, actionItem);
+			}
 		}
 	}
 }
 
-void Application::addActionAfter(QString existingActionText, QAction* actionToAdd) const
+void Application::addAction(QWidget* widget, Metadata::action_item_t actionItem)
 {
+	auto actionFn = std::get<0>(actionItem);
+	auto actionToAdd = actionFn(this, widget);
+	QString existingActionText = std::get<1>(actionItem);
+
 	for (auto&& menuChild: mainWindow_->menuBar()->children())
 	{
 		auto menu = qobject_cast<QMenu*>(menuChild);
@@ -65,6 +78,12 @@ void Application::addActionAfter(QString existingActionText, QAction* actionToAd
 				{
 					menu->addAction(actionToAdd);
 				}
+
+				if (actionRequiresFocus(actionItem))
+				{
+					createdFocusActions_[widget].emplace_back(actionToAdd);
+				}
+
 				return;
 			};
 		}
@@ -73,49 +92,63 @@ void Application::addActionAfter(QString existingActionText, QAction* actionToAd
 	throw new std::logic_error("Could not add menu item");
 }
 
+void Application::removeFocusActions(QWidget* widget)
+{
+	for (auto&& action : createdFocusActions_[widget])
+	{
+		widget->removeAction(action);
+		action->deleteLater();
+	}
+	createdFocusActions_.erase(widget);
+}
+
 void Application::connectActions()
 {
-	connect(actions_->newFile, &QAction::triggered, this, &Application::setup);
-	connect(actions_->openFile, &QAction::triggered, this, &Application::openFile);
-	connect(actions_->saveFileAs, &QAction::triggered, this, &Application::saveFileAs);
-	connect(actions_->exit, &QAction::triggered, this, &Application::quit);
+	connect(globalActions_->newFile, &QAction::triggered, this, &Application::setup);
+	connect(globalActions_->openFile, &QAction::triggered, this, &Application::openFile);
+	connect(globalActions_->saveFileAs, &QAction::triggered, this, &Application::saveFileAs);
+	connect(globalActions_->exit, &QAction::triggered, this, &Application::quit);
 
-	connect(actions_->undo, &QAction::triggered, this, [&]() { project().undo(); });
-	connect(actions_->redo, &QAction::triggered, this, [&]() { project().redo(); });
+	connect(globalActions_->undo, &QAction::triggered, this, [&]() { project().undo(); });
+	connect(globalActions_->redo, &QAction::triggered, this, [&]() { project().redo(); });
 
 	connect(this, &Application::projectMutated, this, [&](auto mutationInfo)
 	{
 		auto undoState = project().undoState();
-		actions_->undo->setText(tr("&Undo") + " " + undoState.undoDescription.c_str());
-		actions_->redo->setText(tr("&Redo") + " " + undoState.redoDescription.c_str());
-		actions_->undo->setEnabled(undoState.canUndo);
-		actions_->redo->setEnabled(undoState.canRedo);
+		globalActions_->undo->setText(tr("&Undo") + " " + undoState.undoDescription.c_str());
+		globalActions_->redo->setText(tr("&Redo") + " " + undoState.redoDescription.c_str());
+		globalActions_->undo->setEnabled(undoState.canUndo);
+		globalActions_->redo->setEnabled(undoState.canRedo);
 	});
 }
 
 void Application::fillMenu() const
 {
 	auto fileMenu = mainWindow_->menuBar()->addMenu(tr("&File"));
-	fileMenu->addAction(actions_->newFile);
-	fileMenu->addAction(actions_->openFile);
-	fileMenu->addAction(actions_->saveFileAs);
+	fileMenu->addAction(globalActions_->newFile);
+	fileMenu->addAction(globalActions_->openFile);
+	fileMenu->addAction(globalActions_->saveFileAs);
 	fileMenu->addSeparator();
-	fileMenu->addAction(actions_->exit);
+	fileMenu->addAction(globalActions_->exit);
 
 	auto editMenu = mainWindow_->menuBar()->addMenu(tr("&Edit"));
-	editMenu->addAction(actions_->undo);
-	editMenu->addAction(actions_->redo);
+	editMenu->addAction(globalActions_->undo);
+	editMenu->addAction(globalActions_->redo);
 }
 
 void Application::setup()
 {
 	if (mainWindow_) mainWindow_->deleteLater();
+	
+	// Reset focus (actions)
+	while (createdFocusActions_.size()) removeFocusActions(begin(createdFocusActions_)->first);
+	prevFocus_ = nullptr;
 
 	project_ = Project();
 	mainWindow_ = new QMainWindow();
 	mainWindow_->menuBar()->setNativeMenuBar(false);
 
-	actions_ = std::make_shared<Actions>(this);
+	globalActions_ = std::make_shared<Actions>(this);
 	fillMenu();
 	connectActions();
 	applyModules();
@@ -183,4 +216,44 @@ void Application::save(QString filename)
 		QTextStream stream(&file);
 		stream << s.str().c_str();
 	}
+}
+
+bool Application::eventFilter(QObject* object, QEvent* event)
+{
+	if (event->type() == QEvent::FocusIn)
+	{
+		QWidget* focus = qobject_cast<QWidget*>(object);
+
+		while (focus)
+		{
+			auto it = focusActions_.find(focus);
+			if (it != end(focusActions_))
+			{
+				break;
+			}
+
+			focus = focus->parentWidget();
+		}
+
+		// Did focus change to another module?
+		if (focusActions_.find(focus) != end(focusActions_))
+		{
+			// Yes, so remove old actions and add new ones
+			if (focus != prevFocus_)
+			{
+				if (prevFocus_) removeFocusActions(prevFocus_);
+				prevFocus_ = focus;
+
+				if (focus)
+				{
+					auto it = focusActions_.find(focus);
+					for (auto&& action : it->second)
+					{
+						addAction(focus, action);
+					}
+				}
+			}
+		}
+	}
+	return false;
 }

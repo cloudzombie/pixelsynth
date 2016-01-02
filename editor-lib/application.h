@@ -25,7 +25,8 @@ private:
 	void registerModules();
 	void applyModules();
 
-	void addActionAfter(QString existingActionText, QAction* actionToAdd) const;
+	void addAction(QWidget* widget, Modules::Metadata::action_item_t actionItem);
+	void removeFocusActions(QWidget* widget);
 
 	void connectActions();
 	void fillMenu() const;
@@ -37,11 +38,16 @@ private:
 	void openFile();
 	void saveFileAs();
 
+	bool eventFilter(QObject* object, QEvent* event);
+
 	Core::Project project_;
 	QMainWindow* mainWindow_;
-	std::shared_ptr<Actions> actions_;
+	std::shared_ptr<Actions> globalActions_;
 
 	std::deque<Modules::Metadata> moduleMetadata_;
+	std::map<QWidget*, std::vector<QAction*>> createdFocusActions_;
+	std::map<QWidget*, Modules::Metadata::action_list_t> focusActions_;
+	QWidget* prevFocus_;
 };
 
 END_NAMESPACE(Editor)
