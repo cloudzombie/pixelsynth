@@ -23,12 +23,12 @@ public:
 	static RowEditor* makeEditor(Delegate& delegate, Core::Project& project, const Model& model, QWidget* parent, Core::NodePtr node);
 	static RowEditor* makeEditor(Delegate& delegate, Core::Project& project, const Model& model, QWidget* parent, Core::PropertyPtr property);
 
-	virtual void initializeWidgets() = 0;
+	virtual void afterEditorCreated() = 0;
 
 	virtual const std::unordered_set<Widget*> widgets() const = 0;
 	virtual void applyMutations(Core::Document::Builder& mut, std::unordered_set<Widget*> selected) {};
 
-	signals:
+signals:
 	void widgetCreated(Widget* widget) const;
 
 protected:

@@ -37,7 +37,7 @@ public:
 	void applyMutations(Core::Document::Builder& mut);
 
 private:
-	void initializeWidgets() override;
+	void afterEditorCreated() override;
 
 	void updateNode(Core::NodePtr prevNode, Core::NodePtr curNode);
 	void updateGeometry();

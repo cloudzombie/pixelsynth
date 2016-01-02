@@ -35,7 +35,7 @@ public:
 	void updateParentGeometry();
 
 private:
-	void initializeWidgets() override;
+	void afterEditorCreated() override;
 
 	const std::unordered_set<Widget*> widgets() const override;
 

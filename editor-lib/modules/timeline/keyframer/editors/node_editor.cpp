@@ -45,9 +45,12 @@ NodeEditor::NodeEditor(Delegate& delegate, Project& project, const Model& model,
 	updateNode(node_, node_);
 }
 
-void NodeEditor::initializeWidgets()
+void NodeEditor::afterEditorCreated()
 {
 	emit widgetCreated(area_);
+
+	// Give properties a chance to update, now that this editor is created
+	updateGeometry();
 }
 
 const std::unordered_set<Widget*> NodeEditor::widgets() const

@@ -26,7 +26,7 @@ PropertyEditor::PropertyEditor(Delegate& delegate, Project& project, const Model
 	connect(&model, &Model::modelItemPropertyMutated, this, &PropertyEditor::updateProperty);
 }
 
-void PropertyEditor::initializeWidgets()
+void PropertyEditor::afterEditorCreated()
 {
 	updateProperty(property_, property_);
 }

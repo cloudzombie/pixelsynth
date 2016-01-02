@@ -51,9 +51,10 @@ QWidget* Delegate::createEditor(QWidget* parent, const QStyleOptionViewItem& opt
 	connect(editor, &RowEditor::widgetCreated, this, &Delegate::widgetCreated);
 	connect(editor, &QObject::destroyed, this, [=](QObject*) { editors_.erase(editor); });
 
-	editor->initializeWidgets();
-
 	editors_.insert(editor);
+
+	editor->afterEditorCreated();
+
 	return editor;
 }
 
