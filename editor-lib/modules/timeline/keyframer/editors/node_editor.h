@@ -45,6 +45,7 @@ private:
 	Core::NodePtr node_;
 
 	Node::SelectionArea* area_;
+
 	Node::DragHandle* startHandle_;
 	Node::DragHandle* stopHandle_;
 

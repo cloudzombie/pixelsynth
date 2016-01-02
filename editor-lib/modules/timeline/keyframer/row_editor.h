@@ -11,6 +11,7 @@ BEGIN_NAMESPACE(Keyframer)
 enum class TrimEdge;
 class Delegate;
 class Widget;
+class ParentArea;
 
 class RowEditor: public QWidget
 {
@@ -27,16 +28,19 @@ public:
 	virtual const std::unordered_set<Widget*> widgets() const = 0;
 	virtual void applyMutations(Core::Document::Builder& mut, std::unordered_set<Widget*> selected) {};
 
-signals:
+	signals:
 	void widgetCreated(Widget* widget) const;
 
 protected:
 	void paintEvent(QPaintEvent* pe) override;
 
 	void updateDocument(const Core::Document* prev, const Core::Document* cur);
+	void updateParentGeometry(RowEditor* parentEditor);
 
 	Delegate& delegate_;
 	const Core::Document* document_;
+
+	ParentArea* parentArea_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline) END_NAMESPACE(Keyframer)

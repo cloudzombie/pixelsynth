@@ -1,4 +1,5 @@
 #include "property_editor.h"
+#include "node_editor.h"
 #include "../delegate.h"
 #include "../widget.h"
 #include "../../model.h"
@@ -49,6 +50,8 @@ void PropertyEditor::applyOffset(Frame offset, std::unordered_set<Widget*>& alre
 			alreadyProcessed.insert(key);
 		}
 	}
+
+	updateParentGeometry();
 }
 
 void PropertyEditor::updateProperty(PropertyPtr prevProperty, PropertyPtr curProperty)
@@ -79,6 +82,15 @@ void PropertyEditor::updateProperty(PropertyPtr prevProperty, PropertyPtr curPro
 
 		emit widgetCreated(key);
 	}
+
+	updateParentGeometry();
+}
+
+void PropertyEditor::updateParentGeometry()
+{
+	auto node = document_->parent(*property_);
+	auto editor = delegate_.editorFor(node);
+	RowEditor::updateParentGeometry(editor);
 }
 
 bool PropertyEditor::isDirty() const

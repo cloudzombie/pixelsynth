@@ -64,6 +64,7 @@ void NodeEditor::applyOffset(Frame offset, std::unordered_set<Widget*>& alreadyP
 	stop_ += offset;
 	updateGeometry();
 
+	// Apply to properties
 	for (auto&& prop : node_->properties())
 	{
 		auto propertyEditor = delegate_.editorFor(prop);
@@ -119,6 +120,15 @@ void NodeEditor::updateGeometry()
 	area_->move(start_, area_->pos().y());
 	startHandle_->move(0 - startHandle_->width() * 0.5, 0);
 	stopHandle_->move(area_->width() - stopHandle_->width() * 0.5, 0);
+
+	updateParentGeometry(delegate_.editorFor(document_->parent(*node_)));
+
+	// Apply to properties
+	for (auto&& prop : node_->properties())
+	{
+		auto propertyEditor = delegate_.editorFor(prop);
+		if (propertyEditor) propertyEditor->updateParentGeometry();
+	}
 }
 
 bool NodeEditor::isSelected() const

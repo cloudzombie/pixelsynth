@@ -3,6 +3,7 @@
 #include "editors/property_editor.h"
 #include "../model.h"
 #include <core/project.h>
+#include "parent_area.h"
 
 using Core::Document;
 using Core::Project;
@@ -10,6 +11,7 @@ using Core::NodePtr;
 using Core::PropertyPtr;
 using Editor::Modules::Timeline::Model;
 using Editor::Modules::Timeline::Keyframer::Delegate;
+using Editor::Modules::Timeline::Keyframer::ParentArea;
 using Editor::Modules::Timeline::Keyframer::RowEditor;
 using Editor::Modules::Timeline::Keyframer::Widget;
 
@@ -18,6 +20,8 @@ RowEditor::RowEditor(Delegate& delegate, Project& project, const Model& model, Q
 	, delegate_(delegate)
 	, document_(&project.current())
 {
+	parentArea_ = new ParentArea(this);
+
 	setStyleSheet("background-color: #333; border-top: 1px solid #444; margin-top: 1px");
 
 	connect(&model, &Model::documentMutated, this, &RowEditor::updateDocument);
@@ -37,6 +41,12 @@ void RowEditor::updateDocument(const Document* prev, const Document* cur)
 	auto vis = cur->settings().visibility;
 	setFixedWidth(vis.second - vis.first);
 	document_ = cur;
+}
+
+void RowEditor::updateParentGeometry(RowEditor* parentEditor)
+{
+	// Update background area indicating parent
+	parentArea_->updateGeometry(parentEditor);
 }
 
 ///

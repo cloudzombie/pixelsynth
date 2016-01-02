@@ -15,12 +15,6 @@ Key::Key(Frame frame, PropertyValue value, RowEditor* parent)
 	setFrame(frame);
 }
 
-void Key::setSelected(bool selected)
-{
-	selected_ = selected;
-	update();
-}
-
 void Key::setFrame(Frame frame)
 {
 	frame_ = frame;

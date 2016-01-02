@@ -11,8 +11,6 @@ class Key: public Widget
 public:
 	Key(Core::Frame frame, Core::PropertyValue value, RowEditor* parent);
 
-	void setSelected(bool selected) override;
-
 	void setFrame(Core::Frame frame);
 	Core::Frame frame() const { return frame_; }
 	Core::Frame originalFrame() const { return originalFrame_; }

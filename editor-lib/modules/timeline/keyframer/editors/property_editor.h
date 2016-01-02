@@ -32,6 +32,8 @@ public:
 	void applyOffset(Core::Frame offset, std::unordered_set<Widget*>& alreadyProcessed, std::function<bool(Widget*)> pred);
 	void applySelectionOffset(Core::Frame offset, std::unordered_set<Widget*>& alreadyProcessed);
 
+	void updateParentGeometry();
+
 private:
 	void initializeWidgets() override;
 

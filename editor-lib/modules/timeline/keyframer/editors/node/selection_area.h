@@ -15,13 +15,8 @@ class SelectionArea: public Widget
 public:
 	SelectionArea(RowEditor* parent);
 
-	void setSelected(bool selected) override;
-
 private:
-	void enterEvent(QEvent* event) override;
-	void leaveEvent(QEvent* event) override;
-	
-	void updateColor(bool hovering);
+	void paintEvent(QPaintEvent* event) override;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline) END_NAMESPACE(Keyframer) END_NAMESPACE(Editors) END_NAMESPACE(Node)

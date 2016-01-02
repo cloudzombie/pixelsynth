@@ -14,8 +14,10 @@ class Widget: public Draggable
 public:
 	Widget(RowEditor* parent);
 
-	virtual void setSelected(bool selected) = 0;
+	void setSelected(bool selected);
 	bool isSelected() const noexcept { return selected_; }
+	
+	bool isHovering() const noexcept { return hovering_; }
 
 	RowEditor* editor() const noexcept { return editor_; }
 
@@ -23,9 +25,12 @@ signals:
 	void trimmed(const int offset, const TrimEdge edge);
 
 protected:
+	void enterEvent(QEvent* event) override;
+	void leaveEvent(QEvent* event) override;
 	void paintEvent(QPaintEvent* pe) override;
 
 	bool selected_ {};
+	bool hovering_ {};
 	RowEditor* editor_;
 };
 

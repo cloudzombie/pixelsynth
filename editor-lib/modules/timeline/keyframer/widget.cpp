@@ -10,6 +10,24 @@ Widget::Widget(RowEditor* parent)
 {
 }
 
+void Widget::setSelected(bool selected)
+{
+	selected_ = selected;
+	update();
+}
+
+void Widget::enterEvent(QEvent* event)
+{
+	hovering_ = true;
+	update();
+}
+
+void Widget::leaveEvent(QEvent* event)
+{
+	hovering_ = false;
+	update();
+}
+
 void Widget::paintEvent(QPaintEvent* pe)
 {
 	QStyleOption o;
