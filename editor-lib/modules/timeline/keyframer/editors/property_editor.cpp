@@ -59,22 +59,20 @@ void PropertyEditor::updateProperty(PropertyPtr prevProperty, PropertyPtr curPro
 	if (prevProperty != property_) return;
 	property_ = curProperty;
 
-	std::vector<bool> wasSelected;
+	std::unordered_set<Core::Frame> wasSelected;
 
 	for (const auto& key : keys_)
 	{
-		wasSelected.push_back(key->isSelected());
+		if (key->isSelected()) wasSelected.insert(key->frame());
 		key->deleteLater();
 	}
 	keys_.clear();
 
-	auto selectIt = begin(wasSelected);
 	for (const auto& frame : property_->keys())
 	{
 		auto key = new Key(frame, property_->getPropertyValue(frame), this);
 
-		auto selected = false;
-		if (selectIt != end(wasSelected)) selected = *selectIt++;
+		auto selected = wasSelected.find(key->frame()) != end(wasSelected);
 		key->setSelected(selected);
 
 		keys_.emplace_back(key);
