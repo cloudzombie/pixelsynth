@@ -29,6 +29,8 @@ public:
 	void resetSelection();
 	void setSelected(Widget* widget, bool selected);
 	bool isSelected(Widget* widget) const;
+	
+	void deleteSelected();
 
 	void setRubberBandSelection(QRect globalRect);
 

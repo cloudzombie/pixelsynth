@@ -5,6 +5,10 @@ BEGIN_NAMESPACE(Editor) BEGIN_NAMESPACE(Modules) BEGIN_NAMESPACE(Timeline)
 
 class Model;
 
+BEGIN_NAMESPACE(Keyframer)
+class TreeView;
+END_NAMESPACE(Keyframer)
+
 class Widget: public QDockWidget
 {
 	Q_OBJECT
@@ -30,7 +34,7 @@ private:
 	QGridLayout* layout_;
 	QTreeView* tree_;
 	QSplitter* splitter_;
-	QTreeView* keyframer_;
+	Keyframer::TreeView* keyframer_;
 	QSortFilterProxyModel* proxy_;
 	std::shared_ptr<Model> model_;
 	size_t mutationIndex {};

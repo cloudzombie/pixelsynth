@@ -34,6 +34,8 @@ public:
 
 	void updateParentGeometry();
 
+	std::vector<Core::Frame> selectedKeys() const;
+
 private:
 	void afterEditorCreated() override;
 

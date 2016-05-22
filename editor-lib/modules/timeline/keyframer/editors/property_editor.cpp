@@ -91,6 +91,16 @@ void PropertyEditor::updateParentGeometry()
 	RowEditor::updateParentGeometry(editor);
 }
 
+std::vector<Core::Frame> PropertyEditor::selectedKeys() const
+{
+	std::vector<Core::Frame> selected;
+	for (auto&& key : keys_)
+	{
+		if (key->isSelected()) selected.push_back(key->frame());
+	}
+	return selected;
+}
+
 bool PropertyEditor::isDirty() const
 {
 	for (auto&& key : keys_)

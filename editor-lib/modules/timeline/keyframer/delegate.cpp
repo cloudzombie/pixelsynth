@@ -84,6 +84,57 @@ bool Delegate::isSelected(Widget* widget) const
 	return s.find(widget) != end(s);
 }
 
+void Delegate::deleteSelected()
+{
+	std::vector<NodePtr> nodes;
+	std::unordered_map<NodePtr, std::unordered_map<PropertyPtr, std::vector<Core::Frame>>> keyframes;
+
+	for (auto&& node : project_.current().nodes())
+	{
+		auto ne = editorFor(node);
+		if (ne && ne->node() == node && ne->isSelected())
+		{
+			nodes.push_back(node);
+		}
+		else
+		{
+			// If we're not deleting the entire node, maybe we're deleting keys?
+			for (auto&& prop : node->properties())
+			{
+				auto pe = editorFor(prop);
+				if (pe && pe->property() == prop)
+				{
+					auto selectedKeys = pe->selectedKeys();
+					if (!selectedKeys.empty()) keyframes[node][prop] = selectedKeys;
+				}
+			}
+		}
+	}
+
+	if (!nodes.empty() || !keyframes.empty())
+	{
+		project_.mutate([&](Core::Document::Builder& mut) {
+			for (auto&& nodePropKvp : keyframes)
+			{
+				auto& node = nodePropKvp.first;
+				mut.mutate(node, [&](Core::Node::Builder& nodeMut) {
+					for (auto&& propKvp : nodePropKvp.second)
+					{
+						nodeMut.mutateProperty(propKvp.first, [&](Core::Property::Builder& propMut) {
+							for (auto&& frame : propKvp.second)
+							{
+								propMut.erase(frame);
+							}
+						});
+					}
+				});
+			}
+
+			mut.erase(nodes);
+		}, "delete");
+	}
+}
+
 void Delegate::setRubberBandSelection(QRect globalRect)
 {
 	for (auto&& widget : widgets())

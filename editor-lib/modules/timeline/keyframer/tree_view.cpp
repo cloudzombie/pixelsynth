@@ -29,6 +29,11 @@ TreeView::TreeView(Project& project, QSortFilterProxyModel& proxy, Model& model,
 	setHeader(new Header(model, this));
 }
 
+void TreeView::deleteSelected()
+{
+	delegate_->deleteSelected();
+}
+
 void TreeView::drawRow(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const
 {
 	// Don't want to show the actual row, since we're showing an editor instead

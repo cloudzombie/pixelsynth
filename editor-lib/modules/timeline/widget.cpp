@@ -92,18 +92,7 @@ void Widget::syncVerticalScrollBars(int value) const
 
 void Widget::deleteSelected()
 {
-	auto selection = proxy_->mapSelectionToSource(tree_->selectionModel()->selection());
-
-	std::vector<Core::NodePtr> nodes;
-	for (auto&& index : selection.indexes())
-	{
-		auto& node = model_->nodeFromIndex(index);
-		if (node) nodes.push_back(node);
-	}
-
-	project_.mutate([&](Document::Builder& mut) {
-		mut.erase(nodes);
-	});
+	keyframer_->deleteSelected();
 }
 
 void Widget::mutate()

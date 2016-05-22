@@ -17,6 +17,8 @@ class TreeView: public QTreeView
 public:
 	explicit TreeView(Core::Project& project, QSortFilterProxyModel& proxy, Model& model, QWidget* parent);
 
+	void deleteSelected();
+
 private:
 	void drawRow(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 	void mousePressEvent(QMouseEvent* event) override;
