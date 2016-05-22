@@ -306,7 +306,7 @@ void Builder::moveAfter(NodePtr after, std::initializer_list<NodePtr> nodes) noe
 	}
 }
 
-void Builder::erase(std::initializer_list<NodePtr> nodes) noexcept
+void Builder::erase(std::vector<NodePtr> nodes) noexcept
 {
 	for (auto&& node : nodes)
 	{
@@ -314,6 +314,13 @@ void Builder::erase(std::initializer_list<NodePtr> nodes) noexcept
 		assert(pos != end(impl_->nodes_));
 		impl_->nodes_.erase(pos);
 	}
+}
+
+void Builder::erase(std::initializer_list<NodePtr> nodes) noexcept
+{
+	std::vector<NodePtr> vec;
+	for (auto&& node : nodes) vec.push_back(node);
+	erase(vec);
 }
 
 void Builder::eraseChildren(std::initializer_list<NodePtr> nodes) noexcept

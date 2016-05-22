@@ -11,6 +11,9 @@ class Widget: public QDockWidget
 
 public:
 	Widget(QWidget* parent, Core::Project& project);
+
+	void deleteSelected();
+
 	void mutate();
 
 	const Model& model() const { return *model_.get(); }

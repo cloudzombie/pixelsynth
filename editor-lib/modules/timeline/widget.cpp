@@ -64,9 +64,8 @@ Widget::Widget(QWidget* parent, Project& project)
 void Widget::projectMutated(std::shared_ptr<MutationInfo> mutationInfo) const
 {
 	auto selection = proxy_->mapSelectionToSource(tree_->selectionModel()->selection());
-	auto newSelection = model_->apply(mutationInfo, selection.indexes());
-	tree_->selectionModel()->clear();
-	for (auto&& item : newSelection) tree_->selectionModel()->select(proxy_->mapFromSource(item), QItemSelectionModel::Select);
+	auto additionalSelection = model_->apply(mutationInfo, selection.indexes());
+	for (auto&& item : additionalSelection) tree_->selectionModel()->select(proxy_->mapFromSource(item), QItemSelectionModel::Select);
 	
 	keyframer_->setColumnHidden(static_cast<int>(Model::Columns::Value), true);
 
@@ -89,6 +88,22 @@ void Widget::syncVerticalScrollBars(int value) const
 {
 	if (tree_->verticalScrollBar()->value() != value) tree_->verticalScrollBar()->setValue(value);
 	if (keyframer_->verticalScrollBar()->value() != value) keyframer_->verticalScrollBar()->setValue(value);
+}
+
+void Widget::deleteSelected()
+{
+	auto selection = proxy_->mapSelectionToSource(tree_->selectionModel()->selection());
+
+	std::vector<Core::NodePtr> nodes;
+	for (auto&& index : selection.indexes())
+	{
+		auto& node = model_->nodeFromIndex(index);
+		if (node) nodes.push_back(node);
+	}
+
+	project_.mutate([&](Document::Builder& mut) {
+		mut.erase(nodes);
+	});
 }
 
 void Widget::mutate()

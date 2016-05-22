@@ -215,8 +215,10 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 	using NodeOrProperty = eggs::variant<NodePtr, PropertyPtr>;
 	std::unordered_map<NodeOrProperty, NodeOrProperty> mutated;
 
-	std::vector<ModelItem*> selection;
-	for (auto&& index : oldSelection) selection.emplace_back(reinterpret_cast<ModelItem*>(itemFromIndex(index)));
+	QModelIndexList additionalSelection;
+
+	std::unordered_set<ModelItem*> selection;
+	for (auto&& index : oldSelection) selection.insert(reinterpret_cast<ModelItem*>(itemFromIndex(index)));
 
 	auto updatePointers = [&](auto& changes)
 	{
@@ -247,7 +249,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 
 	enum class RowType { Node, Property };
 
-	auto setRow = [&](QStandardItem* parent, size_t row, QList<QStandardItem*>&& items, RowType rowType)
+	auto setRow = [&](QStandardItem* parent, size_t row, QList<QStandardItem*> items, RowType rowType)
 	{
 		if (rowType == RowType::Property)
 		{
@@ -337,8 +339,18 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 
 				if (prevIndex != mut.curIndex || prevParentNode != curParentNode)
 				{
-					setRow(curParentNode, mut.curIndex, prevParentNode->takeRow(prevIndex), rowType);
+					// Was the item selected? Then we should also select the new row items we're inserting
+					bool wasSelected = find(begin(selection), end(selection), item) != end(selection);
+					auto itemRowItems = prevParentNode->takeRow(prevIndex);
+
+					setRow(curParentNode, mut.curIndex, itemRowItems, rowType);
+
+					if (wasSelected)
+					{
+						for (auto&& itemRowItem : itemRowItems) additionalSelection.append(itemRowItem->index());
+					}
 				}
+
 				break;
 			}
 			}
@@ -363,10 +375,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 	applyMutations(mutation->nodes, RowType::Node, createNodeItems, true);
 	applyMutations(mutation->properties, RowType::Property, createPropertyItems, true);
 
-	// Generate new selection indices, perhaps based on mutated nodes
-	QModelIndexList newSelection;
-	for (auto nodeOrProperty : selection) newSelection.append(nodeOrProperty->index());
-	return newSelection;
+	return additionalSelection;
 }
 
 QVariant Model::headerData(int section, Qt::Orientation orientation, int role) const

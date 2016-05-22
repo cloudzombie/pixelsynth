@@ -133,5 +133,16 @@ go_bandit([]() {
 			AssertThat(model->data(newSelection.at(0), Qt::DisplayRole).toString().toStdString(), Equals("a!") || Equals("c"));
 			AssertThat(model->data(newSelection.at(1), Qt::DisplayRole).toString().toStdString(), Equals("a!") || Equals("c"));
 		});
+
+		it("should remove selections of deleted nodes", [&]()
+		{
+			// Select a
+			p->applyMutationsTo(0);
+			oldSelection.append(model->index(0, 0));
+
+			p->mutate([&](Document::Builder& mut) {
+				mut.erase({ p->a[0] });
+			});
+		});
 	});
 });

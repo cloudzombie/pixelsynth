@@ -67,6 +67,7 @@ public:
 		void append(NodePtr parent, std::initializer_list<NodePtr> nodes) noexcept;
 		void moveAfter(NodePtr after, std::initializer_list<NodePtr> nodes) noexcept;
 
+		void erase(std::vector<NodePtr> nodes) noexcept;
 		void erase(std::initializer_list<NodePtr> nodes) noexcept;
 		void eraseChildren(std::initializer_list<NodePtr> nodes) noexcept;
 		void reparent(NodePtr parent, std::initializer_list<NodePtr> nodes) noexcept;

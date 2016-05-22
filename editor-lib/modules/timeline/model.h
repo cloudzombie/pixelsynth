@@ -24,7 +24,7 @@ public:
 
 	Model();
 
-	QModelIndexList apply(std::shared_ptr<Core::MutationInfo> mutation, const QModelIndexList& oldSelection) noexcept;
+	QModelIndexList apply(std::shared_ptr<Core::MutationInfo> mutation, const QModelIndexList& currentSelection) noexcept;
 	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
 	Core::NodePtr nodeFromIndex(const QModelIndex& index) const noexcept;

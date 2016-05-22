@@ -26,8 +26,9 @@ Editor::Modules::Metadata Editor::Modules::Timeline::registerModule()
 
 	m.addAction<Widget>([&](QObject* app, Widget* widget)
 	{
-		auto action = new QAction(app->tr("&Cut"), app);
-		action->setShortcuts({ QKeySequence(app->tr("Ctrl+C")) });
+		auto action = new QAction(app->tr("&Delete"), app);
+		action->setShortcuts({ QKeySequence(app->tr("Delete")) });
+		action->connect(action, &QAction::triggered, widget, &Widget::deleteSelected);
 		return action;
 	}, "&Redo", ActionFlags::RequiresFocus);
 
