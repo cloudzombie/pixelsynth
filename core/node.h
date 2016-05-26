@@ -88,9 +88,9 @@ END_NAMESPACE(Core)
 namespace std
 {
 	template<>
-	struct hash<Core::NodePtr>
+	struct hash<Core::Node*>
 	{
-		typedef Core::NodePtr argument_type;
+		typedef Core::Node* argument_type;
 		typedef size_t result_type;
 
 		result_type operator()(argument_type const& node) const
