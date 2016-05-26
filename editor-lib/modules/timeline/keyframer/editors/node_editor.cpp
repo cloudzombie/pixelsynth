@@ -5,6 +5,7 @@
 #include "node/selection_area.h"
 #include "node/drag_handle.h"
 #include "property_editor.h"
+#include "../../../../event_bus.h"
 
 #include <core/project.h>
 
@@ -43,6 +44,15 @@ NodeEditor::NodeEditor(Delegate& delegate, Project& project, const Model& model,
 
 	connect(&model, &Model::modelItemNodeMutated, this, &NodeEditor::updateNode);
 	updateNode(node_, node_);
+
+	// Bi-directional connection of "selection changed event" to event bus
+	connect(&EventBus::instance(), &EventBus::nodeSelectionChanged, this, [this](NodePtr eventNode, bool eventSelected) {
+		if (node_ == eventNode && area_->isSelected() != eventSelected) area_->setSelected(eventSelected);
+	});
+
+	connect(area_, &SelectionArea::selectionChanged, this, [this](bool selected) {
+		emit EventBus::instance().nodeSelectionChanged(node_, selected);
+	});
 }
 
 void NodeEditor::afterEditorCreated()

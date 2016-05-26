@@ -3,6 +3,7 @@
 #include <core/project.h>
 
 #include "modules/metadata.h"
+#include "event_bus.h"
 
 BEGIN_NAMESPACE(Editor)
 
@@ -16,6 +17,7 @@ public:
 	explicit Application(int argc, char *argv[]);
 
 	Core::Project& project() noexcept { return project_; }
+	EventBus& eventBus() noexcept { return eventBus_; }
 
 signals:
 	void projectChanged();
@@ -43,6 +45,7 @@ private:
 	Core::Project project_;
 	QMainWindow* mainWindow_;
 	std::shared_ptr<Actions> globalActions_;
+	EventBus eventBus_;
 
 	std::deque<Modules::Metadata> moduleMetadata_;
 	std::map<QWidget*, std::vector<QAction*>> createdFocusActions_;

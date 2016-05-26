@@ -414,6 +414,13 @@ int Model::findChildIndex(QStandardItem* parent, ModelItem* item) noexcept
 	return -1;
 }
 
+QModelIndex Model::findItemIndex(Core::NodePtr ptr) const noexcept
+{
+	auto item = findItem(ptr);
+	if (!item) return QModelIndex();
+	return item->index();
+}
+
 Model::ModelItem* Model::findItem(QVariant ptr) const noexcept
 {
 	auto results = match(
@@ -434,13 +441,17 @@ Model::ModelItem* Model::findItem(PropertyPtr ptr) const noexcept { return findI
 NodePtr Model::nodeFromIndex(const QModelIndex& index) const noexcept
 {
 	if (!index.isValid()) return nullptr;
-	return ModelItem::node(itemFromIndex(index));
+	auto item = itemFromIndex(index);
+	if (!item) return nullptr;
+	return ModelItem::node(item);
 }
 
 PropertyPtr Model::propertyFromIndex(const QModelIndex& index) const noexcept
 {
 	if (!index.isValid()) return nullptr;
-	return ModelItem::prop(itemFromIndex(index));
+	auto item = itemFromIndex(index);
+	if (!item) return nullptr;
+	return ModelItem::prop(item);
 }
 
 PropertyValue Model::roundTripPropertyValueFromIndex(const QModelIndex& index) const noexcept

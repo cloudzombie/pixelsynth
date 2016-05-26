@@ -12,8 +12,10 @@ Widget::Widget(RowEditor* parent)
 
 void Widget::setSelected(bool selected)
 {
+	bool shouldEmit = selected_ != selected;
 	selected_ = selected;
 	update();
+	if (shouldEmit) emit selectionChanged(selected);
 }
 
 void Widget::enterEvent(QEvent* event)

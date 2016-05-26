@@ -30,6 +30,7 @@ public:
 
 	Core::NodePtr nodeFromIndex(const QModelIndex& index) const noexcept;
 	Core::PropertyPtr propertyFromIndex(const QModelIndex& index) const noexcept;
+	QModelIndex findItemIndex(Core::NodePtr ptr) const noexcept;
 
 	// Converts the property value on that index into a QVariant and back again, used for testing purposes
 	Core::PropertyValue roundTripPropertyValueFromIndex(const QModelIndex& index) const noexcept;

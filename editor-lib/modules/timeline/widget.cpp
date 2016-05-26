@@ -3,6 +3,7 @@
 #include "proxy_model.h"
 #include "keyframer/tree_view.h"
 #include "../property_editors/delegate.h"
+#include "../../event_bus.h"
 
 #include <core/utils.h>
 #include <core/mutation_info.h>
@@ -60,6 +61,27 @@ Widget::Widget(QWidget* parent, Project& project)
 			});
 		}, "edit " + prop->metadata().title());
 	});
+
+	// Whenever the selection changes, emit this to the global event bus
+	connect(tree_->selectionModel(), &QItemSelectionModel::selectionChanged, this, [this](const QItemSelection& selected, const QItemSelection& deselected) {
+		static auto setSelected = [this](const QItemSelectionRange& range, bool selected)
+		{
+			for (auto& index : range.indexes())
+			{
+				if (index.column() != 0) continue; // all columns in a row are identical for our purposes, so ignore
+				auto node = model_->nodeFromIndex(proxy_->mapToSource(index));
+				if (node) emit EventBus::instance().nodeSelectionChanged(node, selected);
+			}
+		};
+
+		for (auto& range : selected) setSelected(range, true);
+		for (auto& range : deselected) setSelected(range, false);
+	});
+
+	// Whenever global selection changes, apply it to the tree selection model
+	connect(&EventBus::instance(), &EventBus::nodeSelectionChanged, this, [this](NodePtr node, bool selected) {
+		tree_->selectionModel()->select(proxy_->mapFromSource(model_->findItemIndex(node)), (selected ? QItemSelectionModel::Select : QItemSelectionModel::Deselect) | QItemSelectionModel::Rows);
+	});
 }
 
 void Widget::projectMutated(std::shared_ptr<MutationInfo> mutationInfo) const
@@ -67,6 +89,12 @@ void Widget::projectMutated(std::shared_ptr<MutationInfo> mutationInfo) const
 	auto selection = proxy_->mapSelectionToSource(tree_->selectionModel()->selection()).indexes();
 	auto expanded = keyframer_->expanded();
 	auto mutatedIndices = model_->apply(mutationInfo);
+
+	// Hack to make sure we only see the item column in the keyframer
+	keyframer_->setColumnHidden(static_cast<int>(Model::Columns::Value), true);
+
+	// Update and create item widgets
+	updateItemWidgets(model_->invisibleRootItem());
 
 	// Make sure any new rows have the same selection and expansion
 	auto i = mutatedIndices.constBegin();
@@ -84,10 +112,6 @@ void Widget::projectMutated(std::shared_ptr<MutationInfo> mutationInfo) const
 
 		i++;
 	}
-	
-	keyframer_->setColumnHidden(static_cast<int>(Model::Columns::Value), true);
-
-	updateItemWidgets(model_->invisibleRootItem());
 }
 
 void Widget::updateItemWidgets(QStandardItem* parent) const

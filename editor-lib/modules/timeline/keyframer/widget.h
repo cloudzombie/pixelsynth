@@ -22,6 +22,7 @@ public:
 	RowEditor* editor() const noexcept { return editor_; }
 
 signals:
+	void selectionChanged(const bool selected);
 	void trimmed(const int offset, const TrimEdge edge);
 
 protected:
