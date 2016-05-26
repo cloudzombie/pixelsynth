@@ -19,8 +19,8 @@ Widget::Widget(QWidget* parent, Project& project)
 	, layout_(new QGridLayout())
 	, tree_(new QTreeView(this))
 	, splitter_(new QSplitter(this))
-	, model_(std::make_shared<Model>())
 	, proxy_(new ProxyModel(this))
+	, model_(std::make_shared<Model>())
 {
 	setWindowTitle(tr("Timeline"));
 
@@ -110,7 +110,7 @@ void Widget::projectMutated(std::shared_ptr<MutationInfo> mutationInfo) const
 			tree_->expand(proxy_->mapFromSource(i.value()));
 		}
 
-		i++;
+		++i;
 	}
 }
 
@@ -132,7 +132,7 @@ void Widget::syncVerticalScrollBars(int value) const
 	if (keyframer_->verticalScrollBar()->value() != value) keyframer_->verticalScrollBar()->setValue(value);
 }
 
-void Widget::deleteSelected()
+void Widget::deleteSelected() const
 {
 	keyframer_->deleteSelected();
 }
