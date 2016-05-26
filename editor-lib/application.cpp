@@ -1,5 +1,7 @@
 #include "application.h"
 #include "actions.h"
+#include "modules/graph/module.h"
+#include "modules/inspector/module.h"
 #include "modules/timeline/module.h"
 
 using Core::Project;
@@ -25,6 +27,8 @@ Application::Application(int argc, char *argv[])
 
 void Application::registerModules()
 {
+	moduleMetadata_.emplace_back(Modules::Graph::registerModule());
+	moduleMetadata_.emplace_back(Modules::Inspector::registerModule());
 	moduleMetadata_.emplace_back(Modules::Timeline::registerModule());
 }
 
