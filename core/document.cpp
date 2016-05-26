@@ -311,8 +311,12 @@ void Builder::erase(std::vector<NodePtr> nodes) noexcept
 	for (auto&& node : nodes)
 	{
 		auto pos = find(begin(impl_->nodes_), end(impl_->nodes_), node);
-		assert(pos != end(impl_->nodes_));
-		impl_->nodes_.erase(pos);
+
+		// May already have been deleted because parent was deleted
+		if (pos != end(impl_->nodes_))
+		{
+			impl_->nodes_.erase(pos);
+		}
 	}
 }
 
