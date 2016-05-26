@@ -50,9 +50,6 @@ private:
 	const std::unordered_set<Widget*> widgets() const;
 	const std::unordered_set<Widget*> selected() const;
 
-	void applyInDocumentOrder(const std::unordered_set<Widget*> widgets, std::function<void(Widget*)> fn) const;
-	const std::unordered_set<Widget*> selectionAnd(Widget* additionalWidget) const;
-
 	Core::Project& project_;
 	const QSortFilterProxyModel& proxy_;
 	const Model& model_;

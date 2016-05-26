@@ -268,35 +268,6 @@ void Delegate::widgetReleased()
 
 }
 
-void Delegate::applyInDocumentOrder(std::unordered_set<Widget*> widgets, std::function<void(Widget*)> fn) const
-{
-	// Not particularly efficient, meh
-	for (auto&& node : project_.current().nodes())
-	{
-		for (auto&& w : widgets)
-		{
-			auto ne = qobject_cast<NodeEditor*>(w->editor());
-			if (ne && ne->node() == node) fn(w);
-		}
-
-		for (auto&& prop : node->properties())
-		{
-			for (auto&& w : widgets)
-			{
-				auto pe = qobject_cast<PropertyEditor*>(w->editor());
-				if (pe && pe->property() == prop) fn(w);
-			}
-		}
-	}
-}
-
-const std::unordered_set<Widget*> Delegate::selectionAnd(Widget* additionalWidget) const
-{
-	auto widgets = selected();
-	if (additionalWidget) widgets.insert(additionalWidget);
-	return widgets;
-}
-
 NodeEditor* Delegate::editorFor(NodePtr node) const
 {
 	for (auto&& editor : editors_)
