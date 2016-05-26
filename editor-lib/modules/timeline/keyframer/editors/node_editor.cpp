@@ -71,7 +71,7 @@ void NodeEditor::applyOffset(Frame offset, std::unordered_set<Widget*>& alreadyP
 	for (auto&& prop : node_->properties())
 	{
 		auto propertyEditor = delegate_.editorFor(prop);
-		propertyEditor->applyOffset(offset, alreadyProcessed, [](Widget* w) { return true; });
+		if (propertyEditor) propertyEditor->applyOffset(offset, alreadyProcessed, [](Widget* w) { return true; });
 	}
 
 	// Recursively apply to children
@@ -149,7 +149,7 @@ bool NodeEditor::isDirty() const
 	for (auto&& prop : node_->properties())
 	{
 		auto propertyEditor = delegate_.editorFor(prop);
-		if (propertyEditor->isDirty()) return true;
+		if (propertyEditor && propertyEditor->isDirty()) return true;
 	}
 	return false;
 }
@@ -163,7 +163,7 @@ void NodeEditor::applyMutations(Core::Document::Builder& mut)
 		for (auto&& prop : node_->properties())
 		{
 			auto propertyEditor = delegate_.editorFor(prop);
-			propertyEditor->applyMutations(builder);
+			if (propertyEditor) propertyEditor->applyMutations(builder);
 		}
 	});
 }
