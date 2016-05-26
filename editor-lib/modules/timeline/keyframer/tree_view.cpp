@@ -28,8 +28,8 @@ TreeView::TreeView(Project& project, QSortFilterProxyModel& proxy, Model& model,
 	setItemDelegateForColumn(static_cast<int>(Model::Columns::Item), delegate_);
 	setHeader(new Header(model, this));
 
-	connect(this, &QTreeView::expanded, this, [&](const QModelIndex& index) { expanded_.insert(model.itemFromIndex(proxy.mapToSource(index))); });
-	connect(this, &QTreeView::collapsed, this, [&](const QModelIndex& index) { expanded_.erase(model.itemFromIndex(proxy.mapToSource(index))); });
+	connect(this, &QTreeView::expanded, this, [&](const QModelIndex& index) { expanded_.insert(proxy.mapToSource(index)); });
+	connect(this, &QTreeView::collapsed, this, [&](const QModelIndex& index) { expanded_.remove(proxy.mapToSource(index)); });
 }
 
 void TreeView::deleteSelected()
@@ -42,7 +42,7 @@ QModelIndexList TreeView::expanded() const
 	QModelIndexList list;
 	for (auto&& e : expanded_)
 	{
-		list.append(e->index());
+		list.append(e);
 	}
 	return list;
 }

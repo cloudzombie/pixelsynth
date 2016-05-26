@@ -33,7 +33,7 @@ private:
 	QPoint dragPos_;
 	bool isDragging_ {};
 
-	std::unordered_set<QStandardItem*> expanded_;
+	QSet<QPersistentModelIndex> expanded_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline) END_NAMESPACE(Keyframer)
