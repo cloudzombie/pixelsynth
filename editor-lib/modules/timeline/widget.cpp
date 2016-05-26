@@ -1,5 +1,6 @@
 #include "widget.h"
 #include "model.h"
+#include "proxy_model.h"
 #include "keyframer/tree_view.h"
 #include "../property_editors/delegate.h"
 
@@ -18,7 +19,7 @@ Widget::Widget(QWidget* parent, Project& project)
 	, tree_(new QTreeView(this))
 	, splitter_(new QSplitter(this))
 	, model_(std::make_shared<Model>())
-	, proxy_(new QSortFilterProxyModel(this))
+	, proxy_(new ProxyModel(this))
 {
 	setWindowTitle(tr("Timeline"));
 

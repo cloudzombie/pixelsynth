@@ -433,11 +433,13 @@ Model::ModelItem* Model::findItem(PropertyPtr ptr) const noexcept { return findI
 
 NodePtr Model::nodeFromIndex(const QModelIndex& index) const noexcept
 {
+	if (!index.isValid()) return nullptr;
 	return ModelItem::node(itemFromIndex(index));
 }
 
 PropertyPtr Model::propertyFromIndex(const QModelIndex& index) const noexcept
 {
+	if (!index.isValid()) return nullptr;
 	return ModelItem::prop(itemFromIndex(index));
 }
 
