@@ -11,9 +11,22 @@ class PropertyMetadata
 		std::string title_;
 		PropertyValue defaultValue_;
 
+		friend bool operator==(const Data& lhs, const Data& rhs)
+		{
+			return lhs.hash_ == rhs.hash_
+				&& lhs.title_ == rhs.title_
+				&& lhs.defaultValue_ == rhs.defaultValue_;
+		}
+
+		friend bool operator!=(const Data& lhs, const Data& rhs)
+		{
+			return !(lhs == rhs);
+		}
+
 		friend class PropertyMetadata;
 		friend class Builder;
 	};
+
 public:
 	explicit PropertyMetadata(const Data&& data)
 		: data_(data)
@@ -44,6 +57,16 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& out, const PropertyMetadata& n);
 	friend std::ostream& operator<<(std::ostream& out, PropertyMetadata* n) { out << *n; return out; }
+
+	friend bool operator==(const PropertyMetadata& lhs, const PropertyMetadata& rhs)
+	{
+		return lhs.data_ == rhs.data_;
+	}
+
+	friend bool operator!=(const PropertyMetadata& lhs, const PropertyMetadata& rhs)
+	{
+		return !(lhs == rhs);
+	}
 
 private:
 	const Data data_;
@@ -137,6 +160,16 @@ namespace std
 			return h;
 		}
 	};
+
+	template<> struct hash<Core::PropertyMetadata>
+	{
+		size_t operator()(const Core::PropertyMetadata& s) const
+		{
+			auto h1(hash<string>()(s.title()));
+			return h1;
+		}
+	};
+
 }
 
 struct connector_metadata_eq_hash
