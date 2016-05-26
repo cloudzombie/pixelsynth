@@ -204,10 +204,6 @@ private:
 
 ///
 
-Model::Model()
-{
-}
-
 QMap<QModelIndex, QModelIndex> Model::apply(std::shared_ptr<Core::MutationInfo> mutation) noexcept
 {
 	emit documentMutated(&mutation->prev, &mutation->cur);

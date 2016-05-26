@@ -80,6 +80,7 @@ Widget::Widget(QWidget* parent, Project& project)
 
 	// Whenever global selection changes, apply it to the tree selection model
 	connect(&EventBus::instance(), &EventBus::nodeSelectionChanged, this, [this](NodePtr node, bool selected) {
+		QSignalBlocker blocker(&EventBus::instance()); // since this event came from the event bus already, we don't need to trigger the same event again based on changes in the tree selectionmodel
 		tree_->selectionModel()->select(proxy_->mapFromSource(model_->findItemIndex(node)), (selected ? QItemSelectionModel::Select : QItemSelectionModel::Deselect) | QItemSelectionModel::Rows);
 	});
 }

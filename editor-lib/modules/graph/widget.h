@@ -10,7 +10,7 @@ class Widget: public QWidget
 public:
 	Widget(QWidget* parent, Core::Project& project);
 
-	public slots:
+public slots:
 	void projectMutated(std::shared_ptr<Core::MutationInfo> mutationInfo) const;
 
 private:

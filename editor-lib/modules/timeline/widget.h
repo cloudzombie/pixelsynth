@@ -16,7 +16,7 @@ class Widget: public QDockWidget
 public:
 	Widget(QWidget* parent, Core::Project& project);
 
-	void deleteSelected();
+	void deleteSelected() const;
 
 	void mutate();
 
