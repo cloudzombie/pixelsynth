@@ -93,7 +93,8 @@ void Application::addAction(QWidget* widget, Metadata::action_item_t actionItem)
 		}
 	}
 
-	throw new std::logic_error("Could not add menu item");
+	// TODO: Fix this
+	//throw new std::logic_error("Could not add menu item");
 }
 
 void Application::removeFocusActions(QWidget* widget)
