@@ -33,10 +33,7 @@ public:
 	// Converts the property value on that index into a QVariant and back again, used for testing purposes
 	Core::PropertyValue roundTripPropertyValueFromIndex(const QModelIndex& index) const noexcept;
 
-	void emitPropertyChanged(const Core::Property* prop, Core::PropertyValue newValue) const noexcept;
-
 signals:
-	void propertyChanged(const Core::Property* prop, Core::PropertyValue newValue) const;
 	void documentMutated(const Core::Document* prevDocument, const Core::Document* curDocument) const;
 	void modelItemNodeMutated(Core::NodePtr prevNode, Core::NodePtr curNode) const;
 	void modelItemPropertyMutated(Core::PropertyPtr prevProp, Core::PropertyPtr curProp) const;

@@ -48,7 +48,7 @@ Widget::Widget(QWidget* parent, Project& project)
 	connect(tree_->verticalScrollBar(), &QScrollBar::valueChanged, this, &Widget::syncVerticalScrollBars);
 	connect(keyframer_->verticalScrollBar(), &QScrollBar::valueChanged, this, &Widget::syncVerticalScrollBars);
 
-	connect(model_.get(), &Model::propertyChanged, this, [&](const Property* prop, PropertyValue value)
+	connect(&EventBus::instance(), &EventBus::propertyChanged, this, [&](const Property* prop, PropertyValue value)
 	{
 		project.mutate([&](Document::Builder& mut)
 		{

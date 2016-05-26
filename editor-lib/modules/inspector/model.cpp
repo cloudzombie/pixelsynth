@@ -1,8 +1,11 @@
 #include "model.h"
+#include "../property_editors/property_value_item.h"
 #include <core/node.h>
 #include <core/metadata.h>
 
 using Editor::Modules::Inspector::Model;
+using Editor::Modules::PropertyEditors::PropertyValueItem;
+
 using propertygroup_t = std::unordered_map<Core::PropertyMetadata, std::unordered_set<Core::PropertyPtr>>;
 
 struct Model::Impl
@@ -77,7 +80,7 @@ void Model::update()
 		{
 			QList<QStandardItem*> items;
 			auto item = new ModelItem(propGroup.first);
-			items << item << new QStandardItem("value");
+			items << item << new PropertyValueItem(propGroup.second.begin()->get());
 			appendRow(items);
 		}
 	}

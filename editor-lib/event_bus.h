@@ -13,7 +13,8 @@ public:
 	static EventBus& instance();
 
 signals:
-	void nodeSelectionChanged(const Core::NodePtr node, const bool selected);
+	void nodeSelectionChanged(const Core::NodePtr node, const bool selected) const;
+	void propertyChanged(const Core::Property* prop, Core::PropertyValue newValue) const;
 
 private:
 };
