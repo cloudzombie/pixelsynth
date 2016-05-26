@@ -19,6 +19,8 @@ public:
 
 	void deleteSelected();
 
+	QModelIndexList expanded() const;
+
 private:
 	void drawRow(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
 	void mousePressEvent(QMouseEvent* event) override;
@@ -30,6 +32,8 @@ private:
 
 	QPoint dragPos_;
 	bool isDragging_ {};
+
+	std::unordered_set<QStandardItem*> expanded_;
 };
 
 END_NAMESPACE(Editor) END_NAMESPACE(Modules) END_NAMESPACE(Timeline) END_NAMESPACE(Keyframer)

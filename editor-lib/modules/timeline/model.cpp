@@ -208,17 +208,14 @@ Model::Model()
 {
 }
 
-QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const QModelIndexList& oldSelection) noexcept
+QMap<QModelIndex, QModelIndex> Model::apply(std::shared_ptr<Core::MutationInfo> mutation) noexcept
 {
 	emit documentMutated(&mutation->prev, &mutation->cur);
 
 	using NodeOrProperty = eggs::variant<NodePtr, PropertyPtr>;
 	std::unordered_map<NodeOrProperty, NodeOrProperty> mutated;
 
-	QModelIndexList additionalSelection;
-
-	std::unordered_set<ModelItem*> selection;
-	for (auto&& index : oldSelection) selection.insert(reinterpret_cast<ModelItem*>(itemFromIndex(index)));
+	QMap<QModelIndex, QModelIndex> mutatedIndices;
 
 	auto updatePointers = [&](auto& changes)
 	{
@@ -339,16 +336,25 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 
 				if (prevIndex != mut.curIndex || prevParentNode != curParentNode)
 				{
-					// Was the item selected? Then we should also select the new row items we're inserting
-					bool wasSelected = find(begin(selection), end(selection), item) != end(selection);
-					auto itemRowItems = prevParentNode->takeRow(prevIndex);
+					// Store the model index of the row's columns
+					std::vector<QModelIndex> oldIndices;
 
-					setRow(curParentNode, mut.curIndex, itemRowItems, rowType);
-
-					if (wasSelected)
+					auto parent = item->parent() ? item->parent() : invisibleRootItem();
+					int columnCount = parent->columnCount();
+					for (int column = 0; column < columnCount; column++)
 					{
-						for (auto&& itemRowItem : itemRowItems) additionalSelection.append(itemRowItem->index());
+						auto row = item->row();
+						auto child = parent->child(item->row(), column);
+						oldIndices.emplace_back(child ? child->index() : QModelIndex());
 					}
+
+					// Move the row
+					auto itemRowItems = prevParentNode->takeRow(prevIndex);
+					setRow(curParentNode, mut.curIndex, itemRowItems, rowType);
+					
+					// And match the columns with the new indices
+					size_t idx = 0;
+					for (auto&& itemRowItem : itemRowItems) if (itemRowItem) mutatedIndices.insert(oldIndices[idx++], itemRowItem->index());
 				}
 
 				break;
@@ -375,7 +381,7 @@ QModelIndexList Model::apply(std::shared_ptr<Core::MutationInfo> mutation, const
 	applyMutations(mutation->nodes, RowType::Node, createNodeItems, true);
 	applyMutations(mutation->properties, RowType::Property, createPropertyItems, true);
 
-	return additionalSelection;
+	return mutatedIndices;
 }
 
 QVariant Model::headerData(int section, Qt::Orientation orientation, int role) const

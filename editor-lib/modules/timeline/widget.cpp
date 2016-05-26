@@ -63,9 +63,26 @@ Widget::Widget(QWidget* parent, Project& project)
 
 void Widget::projectMutated(std::shared_ptr<MutationInfo> mutationInfo) const
 {
-	auto selection = proxy_->mapSelectionToSource(tree_->selectionModel()->selection());
-	auto additionalSelection = model_->apply(mutationInfo, selection.indexes());
-	for (auto&& item : additionalSelection) tree_->selectionModel()->select(proxy_->mapFromSource(item), QItemSelectionModel::Select);
+	auto selection = proxy_->mapSelectionToSource(tree_->selectionModel()->selection()).indexes();
+	auto expanded = keyframer_->expanded();
+	auto mutatedIndices = model_->apply(mutationInfo);
+
+	// Make sure any new rows have the same selection and expansion
+	auto i = mutatedIndices.constBegin();
+	while (i != mutatedIndices.constEnd())
+	{
+		if (selection.contains(i.key()))
+		{
+			tree_->selectionModel()->select(proxy_->mapFromSource(i.value()), QItemSelectionModel::Select | QItemSelectionModel::Rows);
+		}
+
+		if (expanded.contains(i.key()))
+		{
+			tree_->expand(proxy_->mapFromSource(i.value()));
+		}
+
+		i++;
+	}
 	
 	keyframer_->setColumnHidden(static_cast<int>(Model::Columns::Value), true);
 
