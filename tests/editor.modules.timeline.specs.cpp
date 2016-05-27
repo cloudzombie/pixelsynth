@@ -23,7 +23,10 @@ go_bandit([]() {
 			model = std::make_unique<Editor::Modules::Timeline::Model>();
 			oldSelection.clear();
 			newSelection.clear();
-			p->setMutationCallback([&](auto mutationInfo) { newSelection = model->apply(mutationInfo, oldSelection); oldSelection = newSelection; });
+			p->setMutationCallback([&](std::shared_ptr<Core::MutationInfo> mutationInfo) {
+				//newSelection = model->apply(mutationInfo, oldSelection);
+				//oldSelection = newSelection;
+			});
 		});
 
 		auto qtTestModel = [&]()
@@ -128,7 +131,7 @@ go_bandit([]() {
 			oldSelection.append(model->index(0, 0));
 			oldSelection.append(model->index(3, 0));
 
-			p->applyMutationsTo(13);
+			p->applyMutation(13);
 			AssertThat(newSelection.size(), Equals(2));
 			AssertThat(model->data(newSelection.at(0), Qt::DisplayRole).toString().toStdString(), Equals("a!") || Equals("c"));
 			AssertThat(model->data(newSelection.at(1), Qt::DisplayRole).toString().toStdString(), Equals("a!") || Equals("c"));

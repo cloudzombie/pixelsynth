@@ -18,7 +18,7 @@ public:
 private:
 	void update();
 
-	std::unique_ptr<Impl> impl_;
+	std::shared_ptr<Impl> impl_;
 	std::unordered_set<Core::NodePtr> nodes_;
 };
 

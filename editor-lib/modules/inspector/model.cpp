@@ -6,7 +6,7 @@
 using Editor::Modules::Inspector::Model;
 using Editor::Modules::PropertyEditors::PropertyValueItem;
 
-using propertygroup_t = std::unordered_map<Core::PropertyMetadata, std::unordered_set<Core::PropertyPtr>>;
+using propertygroup_t = std::unordered_map<const Core::PropertyMetadata*, std::unordered_set<Core::PropertyPtr>>;
 
 struct Model::Impl
 {
@@ -16,7 +16,7 @@ struct Model::Impl
 class Model::ModelItem: public QStandardItem
 {
 public:
-	ModelItem(const Core::PropertyMetadata metadata)
+	ModelItem(const Core::PropertyMetadata& metadata)
 		: metadata_(metadata)
 	{}
 
@@ -33,11 +33,11 @@ public:
 		}
 	}
 
-	const Core::PropertyMetadata metadata_;
+	const Core::PropertyMetadata& metadata_;
 };
 
 Model::Model()
-	: impl_(std::make_unique<Impl>())
+	: impl_(std::make_shared<Impl>())
 {}
 
 void Model::selectNode(Core::NodePtr node)
@@ -59,7 +59,7 @@ void Model::update()
 	{
 		for (auto&& prop: node->properties())
 		{
-			newGroup[prop->metadata()].insert(prop);
+			newGroup[&prop->metadata()].insert(prop);
 		}
 	}
 
@@ -79,7 +79,7 @@ void Model::update()
 		if (impl_->group.find(propGroup.first) == end(impl_->group))
 		{
 			QList<QStandardItem*> items;
-			auto item = new ModelItem(propGroup.first);
+			auto item = new ModelItem(*propGroup.first);
 			items << item << new PropertyValueItem(propGroup.second.begin()->get());
 			appendRow(items);
 		}

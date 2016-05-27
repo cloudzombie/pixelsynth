@@ -277,9 +277,9 @@ QVariant Model::headerData(int section, Qt::Orientation orientation, int role) c
 	{
 		switch (section)
 		{
-		case Columns::Item:
+		case static_cast<int>(Columns::Item):
 			return "Item";
-		case Columns::Value:
+		case static_cast<int>(Columns::Value):
 			return "Value";
 		default:
 			return "Unknown";
