@@ -24,8 +24,13 @@ go_bandit([]() {
 			oldSelection.clear();
 			newSelection.clear();
 			p->setMutationCallback([&](std::shared_ptr<Core::MutationInfo> mutationInfo) {
-				//newSelection = model->apply(mutationInfo, oldSelection);
-				//oldSelection = newSelection;
+				auto mutatedIndices = model->apply(mutationInfo);
+
+				newSelection = oldSelection;
+				for (auto& index: newSelection)
+				{
+					if (mutatedIndices.contains(index)) index = mutatedIndices[index];
+				}
 			});
 		});
 
@@ -105,8 +110,6 @@ go_bandit([]() {
 
 			p->applyMutation(8);
 			AssertThat(newSelection.size(), Equals(2));
-			auto a = newSelection.at(0);
-			auto b = newSelection.at(1);
 			AssertThat(model->data(newSelection.at(0), Qt::DisplayRole).toString().toStdString(), Equals("a") || Equals("c"));
 			AssertThat(model->data(newSelection.at(1), Qt::DisplayRole).toString().toStdString(), Equals("a") || Equals("c"));
 		});

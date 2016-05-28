@@ -97,11 +97,9 @@ QMap<QModelIndex, QModelIndex> Model::apply(std::shared_ptr<Core::MutationInfo> 
 {
 	emit documentMutated(&mutation->prev, &mutation->cur);
 
+	// Update the pointers stored in the model items
 	using NodeOrProperty = eggs::variant<NodePtr, PropertyPtr>;
 	std::unordered_map<NodeOrProperty, NodeOrProperty> mutated;
-
-	QMap<QModelIndex, QModelIndex> mutatedIndices;
-
 	auto updatePointers = [&](auto& changes)
 	{
 		for (auto&& mut: changes)
@@ -112,9 +110,24 @@ QMap<QModelIndex, QModelIndex> Model::apply(std::shared_ptr<Core::MutationInfo> 
 			mutated.insert({ mut.prev, mut.cur });
 		}
 	};
-
 	updatePointers(mutation->nodes);
 	updatePointers(mutation->properties);
+
+	// Store the original model indices
+	QMap<NodeOrProperty, QModelIndex> originalIndices;
+	auto storeIndices = [&](auto& changes)
+	{
+		for (auto&& mut : changes)
+		{
+			auto item = findItem(mut.prev);
+			if (item) originalIndices.insert(mut.prev, item->index());
+		}
+	};
+	storeIndices(mutation->nodes);
+	storeIndices(mutation->properties);
+
+	// Map that is used to map old indices to new indices
+	QMap<QModelIndex, QModelIndex> mutatedIndices;
 
 	auto resolve = [&](auto item) -> decltype(item)
 	{
@@ -214,32 +227,21 @@ QMap<QModelIndex, QModelIndex> Model::apply(std::shared_ptr<Core::MutationInfo> 
 				assert(prevParentNode && curParentNode);
 
 				LOG->debug("Mutating from position {} to position {}: {}", mut.prevIndex, mut.curIndex, *mut.cur);
-				auto item = findItem(resolve(mut.prev));
+				auto nodeOrProperty = resolve(mut.prev);
+				auto item = findItem(nodeOrProperty);
 				assert(item);
 				auto prevIndex = findChildIndex(prevParentNode, item);
 				assert(prevIndex != -1);
 
 				if (prevIndex != mut.curIndex || prevParentNode != curParentNode)
 				{
-					// Store the model index of the row's columns
-					std::vector<QModelIndex> oldIndices;
-
-					auto parent = item->parent() ? item->parent() : invisibleRootItem();
-					int columnCount = parent->columnCount();
-					for (int column = 0; column < columnCount; column++)
-					{
-						auto row = item->row();
-						auto child = parent->child(item->row(), column);
-						oldIndices.emplace_back(child ? child->index() : QModelIndex());
-					}
-
 					// Move the row
 					auto itemRowItems = prevParentNode->takeRow(prevIndex);
 					setRow(curParentNode, mut.curIndex, itemRowItems, rowType);
-					
-					// And match the columns with the new indices
-					size_t idx = 0;
-					for (auto&& itemRowItem : itemRowItems) if (itemRowItem) mutatedIndices.insert(oldIndices[idx++], itemRowItem->index());
+
+					// The index changed, so attach the new index to the old index
+					assert(originalIndices.contains(nodeOrProperty));
+					mutatedIndices.insert(originalIndices[nodeOrProperty], itemRowItems.first()->index());
 				}
 
 				break;
