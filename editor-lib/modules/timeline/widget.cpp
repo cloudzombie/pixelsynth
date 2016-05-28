@@ -87,9 +87,15 @@ Widget::Widget(QWidget* parent, Project& project)
 
 void Widget::projectMutated(std::shared_ptr<MutationInfo> mutationInfo) const
 {
-	auto selection = proxy_->mapSelectionToSource(tree_->selectionModel()->selection()).indexes();
-	auto expanded = keyframer_->expanded();
-	auto mutatedIndices = model_->apply(mutationInfo);
+	auto selection = model_->indicesToItems(proxy_->mapSelectionToSource(tree_->selectionModel()->selection()).indexes());
+	auto expanded = model_->indicesToItems(keyframer_->expanded());
+
+	auto removedItems = model_->apply(mutationInfo);
+	for (auto&& removed : removedItems)
+	{
+		selection.remove(removed);
+		expanded.remove(removed);
+	}
 
 	// Hack to make sure we only see the item column in the keyframer
 	keyframer_->setColumnHidden(static_cast<int>(Model::Columns::Value), true);
@@ -97,22 +103,9 @@ void Widget::projectMutated(std::shared_ptr<MutationInfo> mutationInfo) const
 	// Update and create item widgets
 	updateItemWidgets(model_->invisibleRootItem());
 
-	// Make sure any new rows have the same selection and expansion
-	auto i = mutatedIndices.constBegin();
-	while (i != mutatedIndices.constEnd())
-	{
-		if (selection.contains(i.key()))
-		{
-			tree_->selectionModel()->select(proxy_->mapFromSource(i.value()), QItemSelectionModel::Select | QItemSelectionModel::Rows);
-		}
-
-		if (expanded.contains(i.key()))
-		{
-			tree_->expand(proxy_->mapFromSource(i.value()));
-		}
-
-		++i;
-	}
+	// Apply the old selection and expansion again
+	for (auto&& index : model_->itemsToIndices(selection)) if (index != QModelIndex()) tree_->selectionModel()->select(proxy_->mapFromSource(index), QItemSelectionModel::Select | QItemSelectionModel::Rows);
+	for (auto&& index : model_->itemsToIndices(expanded)) if (index != QModelIndex()) tree_->expand(proxy_->mapFromSource(index));
 }
 
 void Widget::updateItemWidgets(QStandardItem* parent) const

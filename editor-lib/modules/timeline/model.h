@@ -22,13 +22,16 @@ public:
 		Value
 	};
 
-	// Applies mutations and returns the items that were mutated (not the items that were added or removed)
-	QMap<QModelIndex, QModelIndex> apply(std::shared_ptr<Core::MutationInfo> mutation) noexcept;
+	// Applies mutations and returns the items that are not valid anymore (i.e. removed)
+	std::vector<QStandardItem*> apply(std::shared_ptr<Core::MutationInfo> mutation) noexcept;
 	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
 	Core::NodePtr nodeFromIndex(const QModelIndex& index) const noexcept;
 	Core::PropertyPtr propertyFromIndex(const QModelIndex& index) const noexcept;
 	QModelIndex findItemIndex(Core::NodePtr ptr) const noexcept;
+	
+	QSet<QStandardItem*> indicesToItems(const QModelIndexList& indices) const noexcept;
+	QModelIndexList itemsToIndices(const QSet<QStandardItem*> items) const noexcept;
 
 	// Converts the property value on that index into a QVariant and back again, used for testing purposes
 	Core::PropertyValue roundTripPropertyValueFromIndex(const QModelIndex& index) const noexcept;

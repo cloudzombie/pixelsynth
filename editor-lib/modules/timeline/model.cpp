@@ -93,9 +93,11 @@ private:
 
 ///
 
-QMap<QModelIndex, QModelIndex> Model::apply(std::shared_ptr<Core::MutationInfo> mutation) noexcept
+std::vector<QStandardItem*> Model::apply(std::shared_ptr<Core::MutationInfo> mutation) noexcept
 {
 	emit documentMutated(&mutation->prev, &mutation->cur);
+
+	std::vector<QStandardItem*> removedItems;
 
 	// Update the pointers stored in the model items
 	using NodeOrProperty = eggs::variant<NodePtr, PropertyPtr>;
@@ -112,22 +114,6 @@ QMap<QModelIndex, QModelIndex> Model::apply(std::shared_ptr<Core::MutationInfo> 
 	};
 	updatePointers(mutation->nodes);
 	updatePointers(mutation->properties);
-
-	// Store the original model indices
-	QMap<NodeOrProperty, QModelIndex> originalIndices;
-	auto storeIndices = [&](auto& changes)
-	{
-		for (auto&& mut : changes)
-		{
-			auto item = findItem(mut.prev);
-			if (item) originalIndices.insert(mut.prev, item->index());
-		}
-	};
-	storeIndices(mutation->nodes);
-	storeIndices(mutation->properties);
-
-	// Map that is used to map old indices to new indices
-	QMap<QModelIndex, QModelIndex> mutatedIndices;
 
 	auto resolve = [&](auto item) -> decltype(item)
 	{
@@ -214,6 +200,7 @@ QMap<QModelIndex, QModelIndex> Model::apply(std::shared_ptr<Core::MutationInfo> 
 				if (!onlyRemove) continue;
 				auto item = findItem(mut.prev);
 				if (!item) continue; // maybe was already deleted when parent was removed
+				removedItems.push_back(item);
 				auto childIndex = findChildIndex(prevParentNode, item);
 				if (childIndex != -1) prevParentNode->removeRow(childIndex);
 				LOG->debug("Removed at position {}: {}", childIndex, *mut.prev);
@@ -238,10 +225,6 @@ QMap<QModelIndex, QModelIndex> Model::apply(std::shared_ptr<Core::MutationInfo> 
 					// Move the row
 					auto itemRowItems = prevParentNode->takeRow(prevIndex);
 					setRow(curParentNode, mut.curIndex, itemRowItems, rowType);
-
-					// The index changed, so attach the new index to the old index
-					assert(originalIndices.contains(nodeOrProperty));
-					mutatedIndices.insert(originalIndices[nodeOrProperty], itemRowItems.first()->index());
 				}
 
 				break;
@@ -268,7 +251,7 @@ QMap<QModelIndex, QModelIndex> Model::apply(std::shared_ptr<Core::MutationInfo> 
 	applyMutations(mutation->nodes, RowType::Node, createNodeItems, true);
 	applyMutations(mutation->properties, RowType::Property, createPropertyItems, true);
 
-	return mutatedIndices;
+	return removedItems;
 }
 
 QVariant Model::headerData(int section, Qt::Orientation orientation, int role) const
@@ -324,6 +307,26 @@ Model::ModelItem* Model::findItem(QVariant ptr) const noexcept
 Model::ModelItem* Model::findItem(NodePtr ptr) const noexcept { return findItem(QVariant::fromValue(ptr)); }
 Model::ModelItem* Model::findItem(PropertyPtr ptr) const noexcept { return findItem(QVariant::fromValue(ptr)); }
 
+QSet<QStandardItem*> Model::indicesToItems(const QModelIndexList& indices) const noexcept
+{
+	QSet<QStandardItem*> items;
+	for (auto&& index : indices)
+	{
+		if (index.column() != 0) continue;
+		items.insert(itemFromIndex(index));
+	}
+	return items;
+}
+
+QModelIndexList Model::itemsToIndices(const QSet<QStandardItem*> items) const noexcept
+{
+	QModelIndexList list;
+	for (auto&& item : items)
+	{
+		list.push_back(indexFromItem(item));
+	}
+	return list;
+}
 
 NodePtr Model::nodeFromIndex(const QModelIndex& index) const noexcept
 {

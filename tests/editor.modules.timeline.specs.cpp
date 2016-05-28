@@ -13,7 +13,8 @@ go_bandit([]() {
 	{
 		std::unique_ptr<MutationProject> p;
 		std::unique_ptr<Editor::Modules::Timeline::Model> model;
-		QModelIndexList oldSelection, newSelection;
+		QSet<QStandardItem*> oldSelection;
+		QModelIndexList newSelection;
 
 		NodePtr a0, b0, c0;
 
@@ -24,15 +25,20 @@ go_bandit([]() {
 			oldSelection.clear();
 			newSelection.clear();
 			p->setMutationCallback([&](std::shared_ptr<Core::MutationInfo> mutationInfo) {
-				auto mutatedIndices = model->apply(mutationInfo);
-
-				newSelection = oldSelection;
-				for (auto& index: newSelection)
-				{
-					if (mutatedIndices.contains(index)) index = mutatedIndices[index];
-				}
+				auto removedItems = model->apply(mutationInfo);
+				for (auto&& removed : removedItems) oldSelection.remove(removed);
 			});
 		});
+
+		auto pushSelection = [&](const QModelIndexList indices)
+		{
+			oldSelection = model->indicesToItems(indices);
+		};
+
+		auto popSelection = [&]()
+		{
+			newSelection = model->itemsToIndices(oldSelection);
+		};
 
 		auto qtTestModel = [&]()
 		{
@@ -105,10 +111,14 @@ go_bandit([]() {
 		{
 			// Select a and c
 			p->applyMutationsTo(7);
-			oldSelection.append(model->index(0, 0));
-			oldSelection.append(model->index(2, 0));
+			QModelIndexList selection;
+			selection.append(model->index(0, 0));
+			selection.append(model->index(2, 0));
 
+			pushSelection(selection);
 			p->applyMutation(8);
+			popSelection();
+
 			AssertThat(newSelection.size(), Equals(2));
 			AssertThat(model->data(newSelection.at(0), Qt::DisplayRole).toString().toStdString(), Equals("a") || Equals("c"));
 			AssertThat(model->data(newSelection.at(1), Qt::DisplayRole).toString().toStdString(), Equals("a") || Equals("c"));
@@ -118,10 +128,14 @@ go_bandit([]() {
 		{
 			// Select a and c
 			p->applyMutationsTo(7);
-			oldSelection.append(model->index(0, 0));
-			oldSelection.append(model->index(2, 0));
+			QModelIndexList selection;
+			selection.append(model->index(0, 0));
+			selection.append(model->index(2, 0));
 
+			pushSelection(selection);
 			p->applyMutationsFromTo(8, 9);
+			popSelection();
+
 			AssertThat(newSelection.size(), Equals(2));
 			AssertThat(model->data(newSelection.at(0), Qt::DisplayRole).toString().toStdString(), Equals("a") || Equals("c"));
 			AssertThat(model->data(newSelection.at(1), Qt::DisplayRole).toString().toStdString(), Equals("a") || Equals("c"));
@@ -131,10 +145,14 @@ go_bandit([]() {
 		{
 			// Select a and c
 			p->applyMutationsTo(12);
-			oldSelection.append(model->index(0, 0));
-			oldSelection.append(model->index(3, 0));
+			QModelIndexList selection;
+			selection.append(model->index(0, 0));
+			selection.append(model->index(3, 0));
 
+			pushSelection(selection);
 			p->applyMutation(13);
+			popSelection();
+
 			AssertThat(newSelection.size(), Equals(2));
 			AssertThat(model->data(newSelection.at(0), Qt::DisplayRole).toString().toStdString(), Equals("a!") || Equals("c"));
 			AssertThat(model->data(newSelection.at(1), Qt::DisplayRole).toString().toStdString(), Equals("a!") || Equals("c"));
@@ -144,11 +162,17 @@ go_bandit([]() {
 		{
 			// Select a
 			p->applyMutationsTo(0);
-			oldSelection.append(model->index(0, 0));
 
+			QModelIndexList selection;
+			selection.append(model->index(0, 0));
+
+			pushSelection(selection);
 			p->mutate([&](Document::Builder& mut) {
 				mut.erase({ p->a[0] });
 			});
+			popSelection();
+
+			AssertThat(newSelection.size(), Equals(0));
 		});
 	});
 });
